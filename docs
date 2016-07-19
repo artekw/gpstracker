@@ -1,0 +1,10 @@
+SQLAlchemy:
+http://docs.sqlalchemy.org/en/latest/core/type_basics.html
+
+Flask:
+http://flask-restful-cn.readthedocs.io/en/0.3.4/index.html
+http://flask-sqlalchemy.pocoo.org/2.1/quickstart/#road-to-enlightenment
+https://impythonist.wordpress.com/2015/07/12/build-an-api-under-30-lines-of-code-with-python-and-flask/
+
+WebUI:
+https://github.com/igoradamenko/awsm.css
