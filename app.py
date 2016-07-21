@@ -1,19 +1,17 @@
-from flask import Flask
+#!/usr/bin/python2
+# -*- coding: utf-8 -*-
+
+from flask import Flask, jsonify, render_template, request, url_for, json
 from flask_sqlalchemy import SQLAlchemy
-from flask_restful import reqparse, abort, Resource, Api
 from datetime import datetime
 
 app = Flask(__name__)
-api = Api(app)
-
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///points.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = ['False']
 db = SQLAlchemy(app)
 
+db.create_all()
 
-parser = reqparse.RequestParser()
-parser.add_argument('latitude')
-parser.add_argument('longitude')
 
 class Coordinates(db.Model):
     """Model of database"""
@@ -27,31 +25,41 @@ class Coordinates(db.Model):
         self.longitude = longitude
         self.date = date
 
-    #def __repr__(self):
-     #   return '<User %r>' % self.latitude
+    def __str__(self):
+        return "{'latitude':%s, 'longitude':%s}" % (self.latitude, self.longitude)
 
 
-class Points(Resource):
-    """REST"""
-    def __init__(self):
-        db.create_all()
-        pass
-
-    def get(self, point_id):
-        pass
-
-    def post(self):
-        args = parser.parse_args()
-        point = Coordinates(args['latitude'], args['longitude'], datetime.today())
-        db.session.add(point)
-        db.session.commit()
-        return '', 201
+def map_data():
+    points = Coordinates.query.all()
+    return [(p.date, p.latitude, p.longitude) for p in points]
 
 
-##
-## Actually setup the Api resource routing here
-##
-api.add_resource(Points, '/points')
+@app.route('/', methods=["GET"])
+@app.route('/query/', methods=["GET"])
+def index():
+    return render_template('index.html')
+
+
+@app.route('/map', methods=["GET"])
+def map():
+    return render_template('map.html', data=map_data())
+
+
+@app.route('/query/get', methods=["GET"])
+def query():
+    points = Coordinates.query.order_by(Coordinates.date)
+    return render_template('points.html', points=points)
+
+
+@app.route('/query/post', methods = ['POST'])
+def post():
+    if not request.json:
+        abort(400)
+    #print request.json
+    point = Coordinates(request.json.get('latitude'), request.json.get('longitude'), datetime.today())
+    db.session.add(point)
+    db.session.commit()
+    return '', 201
 
 
 if __name__ == '__main__':

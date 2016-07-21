@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="utf-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>{% block title %}{% endblock %} - GPS Tracker</title>
+	<link href='https://fonts.googleapis.com/css?family=PT+Serif' rel='stylesheet' type='text/css'>
+	<link rel="stylesheet" href="{{ url_for('static', filename='awsm.css') }}" type="text/css">
+</head>
+<body>
+	<header>
+	<h1>GPS Tracker</h1>
+	<p>Where is my car ?</p>
+	<nav>
+		<ul>
+			<li><a href="/">Info</a></li>
+			<li><a href="/map">Map</a></li>
+			<li><a href="/query/get">Points</a></li>
+		</ul>		
+	</nav>
+	</header>
+	<main>
+	{% block content %}{% endblock %}
+	</main>
+		<footer>
+		<address>GPS Tracker - 2016</address>
+	</footer>
+	{% block scripts %}{% endblock %}
+</body>
+</html>

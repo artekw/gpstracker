@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% block title %}Points{% endblock %}
+	{% block content %}
+	<table>
+	<caption>Coordinates of car location (new on top)</caption>
+	<thead>
+	<tr>
+		<th>Latitude</th>
+		<th>Longitude</th>
+		<th>Speed</th>
+		<th>Altitude</th>
+		<th>Timestamp</th>
+	</tr>
+	</thead>
+	<tbody>
+	{% for point in points|sort(attribute='date', reverse=True) %}
+		<tr>
+			<td>{{ point.latitude }}</td>
+			<td>{{ point.longitude }}</td>
+			<td></td>
+			<td></td>
+			<td>{{ point.date.strftime('%H:%M / %d-%m-%Y') }}</td>
+		<tr>
+	{% endfor %}
+	</tbody>
+	</table>
+	{% endblock %}

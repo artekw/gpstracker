@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Map{% endblock %}
+{% block content %}
+	<div id="mapdiv" style="width: 100%; height: 500px; border: 1px solid black"></div>
+{% endblock %}
+{% block scripts %}
+<script src="http://www.openlayers.org/api/OpenLayers.js"></script>
+<script>
+    map = new OpenLayers.Map("mapdiv");
+    map.addLayer(new OpenLayers.Layer.OSM());
+
+    epsg4326 =  new OpenLayers.Projection("EPSG:4326"); //WGS 1984 projection
+    projectTo = map.getProjectionObject(); //The map projection (Spherical Mercator)
+
+    // suwalki
+    var lonLat = new OpenLayers.LonLat( 22.930788 ,54.111522 ).transform(epsg4326, projectTo);
+
+    var zoom=13;
+    map.setCenter (lonLat, zoom);
+
+    var vectorLayer = new OpenLayers.Layer.Vector("Overlay");
+
+    var markers = {{data|tojson}};
+    var vectorLayer = new OpenLayers.Layer.Vector("Vector",
+{
+    styleMap: new OpenLayers.StyleMap(
+    {
+        label : "${labelText}",
+        fontColor: "blue",
+        fontSize: "12px",
+        fontFamily: "Courier New, monospace",
+        fontWeight: "bold",
+        labelAlign: "lc",
+        labelXOffset: "-3",
+        labelYOffset: "0",
+        labelOutlineColor: "white",
+        labelOutlineWidth: 3,
+        fillColor: "#FF5500",
+        fillOpacity: 0.5,
+        pointRadius: 8,
+    })
+});
+
+    for (var i=0; i<markers.length; i++) {
+
+       var cnt = markers[i][0];
+       var lon = markers[i][1];
+       var lat = markers[i][2];
+
+        var feature = new OpenLayers.Feature.Vector(
+                new OpenLayers.Geometry.Point( lon, lat ).transform(epsg4326, projectTo),
+                {labelText: cnt}
+            );
+        vectorLayer.addFeatures(feature);
+    }
+
+    map.addLayer(vectorLayer);
+  </script>
+{% endblock %}
