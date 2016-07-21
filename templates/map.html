@@ -15,7 +15,7 @@
     // suwalki
     var lonLat = new OpenLayers.LonLat( 22.930788 ,54.111522 ).transform(epsg4326, projectTo);
 
-    var zoom=13;
+    var zoom=12;
     map.setCenter (lonLat, zoom);
 
     var vectorLayer = new OpenLayers.Layer.Vector("Overlay");
@@ -37,15 +37,15 @@
         labelOutlineWidth: 3,
         fillColor: "#FF5500",
         fillOpacity: 0.5,
-        pointRadius: 8,
+        pointRadius: 10,
     })
 });
 
     for (var i=0; i<markers.length; i++) {
 
        var cnt = markers[i][0];
-       var lon = markers[i][1];
-       var lat = markers[i][2];
+       var lat = markers[i][1];
+       var lon = markers[i][2];
 
         var feature = new OpenLayers.Feature.Vector(
                 new OpenLayers.Geometry.Point( lon, lat ).transform(epsg4326, projectTo),

@@ -1,7 +1,7 @@
-#!/usr/bin/python2
+#!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from flask import Flask, jsonify, render_template, request, url_for, json
+from flask import Flask, render_template, request, url_for, json
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
@@ -35,24 +35,27 @@ def map_data():
 
 
 @app.route('/', methods=["GET"])
-@app.route('/query/', methods=["GET"])
 def index():
+    """Main page"""
     return render_template('index.html')
 
 
 @app.route('/map', methods=["GET"])
 def map():
+    """Map page"""
     return render_template('map.html', data=map_data())
 
 
 @app.route('/query/get', methods=["GET"])
 def query():
+    """Query points"""
     points = Coordinates.query.order_by(Coordinates.date)
     return render_template('points.html', points=points)
 
 
 @app.route('/query/post', methods = ['POST'])
 def post():
+    """Add points"""
     if not request.json:
         abort(400)
     #print request.json
@@ -63,4 +66,4 @@ def post():
 
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    app.run(debug=True, host= '0.0.0.0')
