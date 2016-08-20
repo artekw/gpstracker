@@ -10,8 +10,6 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///points.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = ['False']
 db = SQLAlchemy(app)
 
-db.create_all()
-
 
 class Coordinates(db.Model):
     """Model of database"""
@@ -37,6 +35,7 @@ def map_data():
 @app.route('/', methods=["GET"])
 def index():
     """Main page"""
+    db.create_all()
     return render_template('index.html')
 
 
