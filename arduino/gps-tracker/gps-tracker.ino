@@ -1,8 +1,16 @@
 /*
-GPS Tracker v0.1
+ * GPS Tracker v0.1
+ */
 
+/* Libraries:
+ * https://github.com/adafruit/Adafruit_SleepyDog
+ * https://github.com/adafruit/Adafruit_FONA
+ * https://github.com/adafruit/Adafruit_MQTT_Library
+ */
+
+/*
 TODO:
-- wysyłanie danych na sparkfun po wysłaniu SMSa
+- mqtt
 - obsługa błędów
 - optymalizacja
 - obudowa 
@@ -10,54 +18,45 @@ TODO:
 - wysyłanie danych jak jest ruch (akcelerometr?)
 */
 
-// GSM
-#include "Adafruit_FONA.h"
-#include <SoftwareSerial.h>
-#include "config.h"
+#include <Adafruit_SleepyDog.h>
 
-//OLED
+// GSM
+#include "config.h"
+#include <SoftwareSerial.h>
+#include "Adafruit_FONA.h"
+
+// MQTT
+#include "Adafruit_MQTT.h"
+#include "Adafruit_MQTT_FONA.h"
+
+
+// OLED
 #define I2C_ADDRESS 0x3C
 #include "SSD1306Ascii.h"
 #include "SSD1306AsciiAvrI2c.h"
 
-// GSM Conf
-#define FONA_RX 2 //connect to FONA RX
-#define FONA_TX 3 //connect to FONA TX
-#define FONA_RST 4
+SoftwareSerial fonaSS = SoftwareSerial(GSM_TX, GSM_RX); //initialize software serial
 
-SoftwareSerial fonaSS = SoftwareSerial(FONA_TX, FONA_RX); //initialize software serial
-SoftwareSerial *fonaSerial = &fonaSS;
-
-Adafruit_FONA fona = Adafruit_FONA(FONA_RST);
+Adafruit_FONA fona = Adafruit_FONA(GSM_RST);
 SSD1306AsciiAvrI2c oled;
 
 char Lat[15];
 char Lon[15];
 char Speed[15];
 char HDOP[3];
-
 char Time[23];
-
 byte gprs_connected = 0;
 
+boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *username, const __FlashStringHelper *password);
 
 void setup() {
     Serial.begin(115200);
-    Serial.println("Start Tracker");
-    fonaSerial->begin(9600);
-    if (! fona.begin(*fonaSerial)) {
-      Serial.println(F("Couldn't find FONA"));
-      while (1);
-    }
+    Serial.println("Start GPS Tracker");
 
-    Serial.println("GPS Enable");
-    enableGPS();
-    Serial.println("Setup done !");
-
-    // APN
-    fona.setGPRSNetworkSettings(F(APN));
-    // SSL
-    //fona.setHTTPSRedirect(true);
+    // Initialise the FONA module
+    while (! FONAconnect(F(APN), F(USERNAME), F(PASSWORD))) {
+      Serial.println("Retrying FONA");
+  }
 
     // OLED
     oled.begin(&Adafruit128x64, I2C_ADDRESS);
@@ -71,8 +70,6 @@ void setup() {
 void loop() {
     if (getLoc()) {
       Serial.println("GPS Fixed!");
-      //displayGUI();
-      //delay(10000);
       oled.clear();
       oled.println("GPS Fixed!");
       oled.println();
@@ -90,7 +87,7 @@ void loop() {
         oled.println("!!");
       }
       getLoc();
-        if (gprs_connected == 0) {
+       /* if (gprs_connected == 0) {
           if (!fona.enableGPRS(true)) {
             fona.enableGPRS(false);
             Serial.println(F("Failed to turn on"));
@@ -104,11 +101,11 @@ void loop() {
               oled.print("GPRS Connected!");
             }
         }
-        else {
+        else {*/
         uint16_t statuscode;
         int16_t length;
         char loc[50];
-
+        
         sprintf(loc, "{\"longitude\":%s,\"latitude\":%s}", Lon, Lat);
 
         if (!fona.HTTP_POST_start(POST_URL, F("application/json"), (uint8_t *) loc, strlen(loc), &statuscode, (uint16_t *)&length)) {
@@ -124,7 +121,7 @@ void loop() {
             fona.HTTP_POST_end();
           }
         }
-      }
+      //}
       Serial.println(F("Czekam..."));
       oled.clear();
       oled.print("Czekam ");
@@ -150,13 +147,6 @@ void loop() {
       oled.println(hdopbar(HDOP));
       delay(5000);
     }
-}
-
-
-void enableGPS() {
-  Serial.print(F("Enable GPS:"));
-  if (!fona.enableGPS(true))
-    Serial.println(F("Failed to turn on"));
 }
 
 
@@ -213,17 +203,5 @@ char *hdopbar(char *_hdop) {
   else if (hdop > 20) {
     return "...";
   }
-}
-
-
-void displayGUI() {
-  oled.clear();
-  oled.print("GPS: ");
-  oled.print("***");
-  oled.setCol(80);
-  oled.print("GSM: ");
-  oled.println("***");
-  
-  
 }
 

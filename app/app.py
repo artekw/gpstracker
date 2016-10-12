@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-from flask import Flask, render_template, request, url_for, json
+from flask import Flask, render_template, request, abort
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 
@@ -16,7 +16,7 @@ class Coordinates(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     latitude = db.Column(db.Float)
     longitude = db.Column(db.Float)
-    date = db.Column(db.DateTime) # datetime.date() object
+    date = db.Column(db.DateTime)  # datetime.date() object
 
     def __init__(self, latitude, longitude, date):
         self.latitude = latitude
@@ -24,7 +24,8 @@ class Coordinates(db.Model):
         self.date = date
 
     def __str__(self):
-        return "{'latitude':%s, 'longitude':%s}" % (self.latitude, self.longitude)
+        return "{'latitude':%s, 'longitude':%s}" % (self.latitude,
+                                                    self.longitude)
 
 
 def map_data():
@@ -52,17 +53,18 @@ def query():
     return render_template('points.html', points=points)
 
 
-@app.route('/query/post', methods = ['POST'])
+@app.route('/query/post', methods=['POST'])
 def post():
     """Add points"""
     if not request.json:
         abort(400)
-    #print request.json
-    point = Coordinates(request.json.get('latitude'), request.json.get('longitude'), datetime.today())
+    # print request.json
+    point = Coordinates(request.json.get('latitude'),
+                        request.json.get('longitude'), datetime.today())
     db.session.add(point)
     db.session.commit()
     return '', 201
 
 
 if __name__ == '__main__':
-    app.run(debug=True, host= '0.0.0.0')
+    app.run(debug=True, host='0.0.0.0')
