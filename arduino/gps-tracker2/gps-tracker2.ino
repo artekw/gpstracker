@@ -17,6 +17,12 @@
   Written by Limor Fried/Ladyada for Adafruit Industries.
   MIT license, all text above must be included in any redistribution
  ****************************************************/
+
+ /*
+  * TODO:
+  * reconetc GPRS
+  */
+
 #include "config.h"
 #include <Adafruit_SleepyDog.h>
 #include <SoftwareSerial.h>
@@ -52,8 +58,6 @@ Adafruit_MQTT_FONA mqtt(&fona, AIO_SERVER, AIO_SERVERPORT);
 boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *username, const __FlashStringHelper *password);
 
 boolean GPS();
-
-
 
 /****************************** Feeds ***************************************/
 
@@ -160,4 +164,3 @@ void prepareData() {
   dtostrf(gps_data[0], 6, 6, Lat);
   dtostrf(gps_data[2], 3, 3, Speed);
 }
-
