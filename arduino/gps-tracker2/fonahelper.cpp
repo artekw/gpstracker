@@ -64,14 +64,18 @@ boolean GPS() {
   
   Watchdog.reset();
   Serial.println(F("Looking for satelites"));
-  if (!fona.GPSstatus() >=2) {
-    Serial.println(F("Not fixed!"));  
+  int8_t stat;
+  stat = fona.GPSstatus();
+  if (stat < 0 or stat == 0 or stat == 1) {
+    Serial.println(F("Not fixed!"));
     return false;
   }
-  else {
-    Serial.println(F("Fixed!"));
+  if (stat >= 2) {
+    Serial.println(F("GPS Fixed"));
   }
 
+  Watchdog.reset();
+  
   return true;
 }
 
@@ -83,9 +87,8 @@ void GPS_Data(float *pdata) {
   pdata[0] = latitude;
   pdata[1] = longitude;
   pdata[2] = speed_kph;
-  pdata[3] =  hdop;
+  pdata[3] = hdop;
   if (gps_success) {
     return &pdata;
   }
 }
-
