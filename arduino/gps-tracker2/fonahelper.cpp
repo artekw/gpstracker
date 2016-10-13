@@ -7,6 +7,11 @@
 extern Adafruit_FONA fona;
 extern SoftwareSerial fonaSS;
 
+
+// flags
+byte gps_enabled = 0;
+
+
 boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *username, const __FlashStringHelper *password) {
   Watchdog.reset();
 
@@ -52,10 +57,15 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
 
 
 boolean GPS() {
-  Serial.println(F("Enabling GPS"));
-  if (!fona.enableGPS(true)) {
-    Serial.println(F("Failed to turn GPS on"));  
-    return false;
+  if (gps_enabled == 0 ) {
+    Serial.println(F("Enabling GPS"));
+    if (!fona.enableGPS(true)) {
+      Serial.println(F("Failed to turn GPS on"));  
+      return false;
+    }
+    else {
+      gps_enabled = 1;
+    }
   }
 
   Watchdog.reset();
@@ -81,13 +91,11 @@ boolean GPS() {
 
 
 void GPS_Data(float *pdata) {
-  float latitude, longitude, speed_kph, hdop;
-  boolean gps_success = fona.getGPS(&latitude, &longitude, &speed_kph, &hdop);
-  Serial.print(latitude, 7);
+  float latitude, longitude, speed_kph, heading, speed_mph, altitude;
+  boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading);
   pdata[0] = latitude;
   pdata[1] = longitude;
   pdata[2] = speed_kph;
-  pdata[3] = hdop;
   if (gps_success) {
     return &pdata;
   }
