@@ -20,10 +20,12 @@
 
  /*
   * TODO:
-  * reconetc GPRS
+  * reconnect GPRS
   */
 
 #include "config.h"
+#include <TimeLib.h>
+#include <Time.h>
 #include <Adafruit_SleepyDog.h>
 #include <SoftwareSerial.h>
 #include "Adafruit_FONA.h"
@@ -40,10 +42,14 @@ SoftwareSerial fonaSS = SoftwareSerial(GSM_TX, GSM_RX);
 
 Adafruit_FONA fona = Adafruit_FONA(GSM_RST);
 
-float gps_data[3];
-char Lat[15];
-char Lon[15];
-char Speed[15];
+float gps_data[4];
+int ctime[7];
+char Lat[10];
+char Lon[10];
+char Speed[7];
+char Date[20];
+
+byte offset = 2;
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -63,9 +69,10 @@ boolean GPS();
 
 // Setup a feed called 'photocell' for publishing.
 // Notice MQTT paths for AIO follow the form: <username>/feeds/<feedname>
-Adafruit_MQTT_Publish latitude = Adafruit_MQTT_Publish(&mqtt, "feeds/geo/latitude");
-Adafruit_MQTT_Publish longitude = Adafruit_MQTT_Publish(&mqtt, "feeds/geo/longitude");
-Adafruit_MQTT_Publish speed_kph = Adafruit_MQTT_Publish(&mqtt, "feeds/geo/speed");
+Adafruit_MQTT_Publish latitude = Adafruit_MQTT_Publish(&mqtt, "arteq/feeds/geo/latitude");
+Adafruit_MQTT_Publish longitude = Adafruit_MQTT_Publish(&mqtt, "arteq/feeds/geo/longitude");
+Adafruit_MQTT_Publish speed_kph = Adafruit_MQTT_Publish(&mqtt, "arteq/feeds/geo/speed");
+Adafruit_MQTT_Publish date = Adafruit_MQTT_Publish(&mqtt, "arteq/feeds/geo/date");
 
 /*************************** Sketch Code ************************************/
 
@@ -117,9 +124,10 @@ void loop() {
   
   Serial.print(F("\nSending "));
   Serial.print("...");
-  if (! latitude.publish(Lon) or 
-      ! longitude.publish(Lat) or
-      ! speed_kph.publish(Speed)) {
+  if (! latitude.publish(Lat) or 
+      ! longitude.publish(Lon) or
+      ! speed_kph.publish(Speed) or
+      ! date.publish(now())) {
     Serial.println(F("Failed"));
     txfailures++;
   } else {
@@ -158,9 +166,14 @@ void MQTT_connect() {
 }
 
 void prepareData() {
-  void GPS_Data(float *pdata);
-  GPS_Data(&gps_data[0]);
-  dtostrf(gps_data[1], 6, 6, Lon);
+  void GPS_Data(float *pdata, int *idata);
+  GPS_Data(&gps_data[0], &ctime[0]);
   dtostrf(gps_data[0], 6, 6, Lat);
-  dtostrf(gps_data[2], 3, 3, Speed);
+  dtostrf(gps_data[1], 6, 6, Lon);
+  dtostrf(gps_data[2], 2, 2, Speed);
+
+  // prepare data to unixtime
+  setTime(ctime[0],ctime[1],ctime[2],ctime[3],ctime[4],ctime[5]);
+  // timezone
+  adjustTime(offset * SECS_PER_HOUR);
 }

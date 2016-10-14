@@ -2,11 +2,19 @@
 #include <SoftwareSerial.h>
 #include "Adafruit_FONA.h"
 
+
 #define halt(s) { Serial.println(F( s )); while(1);  }
 
 extern Adafruit_FONA fona;
 extern SoftwareSerial fonaSS;
 
+char time[20];
+int YY;
+int MM;
+int DD;
+int hh;
+int mm;
+int ss;
 
 // flags
 byte gps_enabled = 0;
@@ -90,12 +98,20 @@ boolean GPS() {
 }
 
 
-void GPS_Data(float *pdata) {
+void GPS_Data(float *pdata, int *idata) {
   float latitude, longitude, speed_kph, heading, speed_mph, altitude;
-  boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading);
+  boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading, time);
+
+  // put data into array
   pdata[0] = latitude;
   pdata[1] = longitude;
   pdata[2] = speed_kph;
+  idata[0] = hh;
+  idata[1] = mm;
+  idata[2] = ss;
+  idata[3] = DD;
+  idata[4] = MM;
+  idata[5] = YY;
   if (gps_success) {
     return &pdata;
   }
