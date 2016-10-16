@@ -8,13 +8,13 @@
 extern Adafruit_FONA fona;
 extern SoftwareSerial fonaSS;
 
-char time[20];
+char utime[20];
 int YY;
-int MM;
-int DD;
-int hh;
-int mm;
-int ss;
+byte MM;
+byte DD;
+byte hh;
+byte mm;
+byte ss;
 
 // flags
 byte gps_enabled = 0;
@@ -98,14 +98,17 @@ boolean GPS() {
 }
 
 
-void GPS_Data(float *pdata, int *idata) {
+void GPS_Data(float *fdata, int *idata) {
   float latitude, longitude, speed_kph, heading, speed_mph, altitude;
-  boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading, time);
+  boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading, utime);
+  sscanf(utime,"%04d%02d%02d%02d%02d%02d",&YY,&MM,&DD,&hh,&mm,&ss);
 
   // put data into array
-  pdata[0] = latitude;
-  pdata[1] = longitude;
-  pdata[2] = speed_kph;
+  fdata[0] = latitude;
+  fdata[1] = longitude;
+  fdata[2] = speed_kph;
+  fdata[3] = altitude;
+  fdata[4] = heading;
   idata[0] = hh;
   idata[1] = mm;
   idata[2] = ss;
@@ -113,6 +116,6 @@ void GPS_Data(float *pdata, int *idata) {
   idata[4] = MM;
   idata[5] = YY;
   if (gps_success) {
-    return &pdata;
+    return &fdata;
   }
 }
