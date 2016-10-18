@@ -7,8 +7,8 @@
 // #define AIO_USERNAME    ""
 // #define AIO_PASSWORD    ""
 
-#define TOPIC           "owntracks/arteq/home"
-#define TID             "aq" // "tracker-ID which is used by the auto-faces feature to display, say, initials of a user."
+#define TOPIC           "owntracks/piesek/yasmina"
+#define TID             "yb" // "tracker-ID which is used by the auto-faces feature to display, say, initials of a user."
 #define SPEED_TR        2  // bellow that number = 0
 
 #define DELAY           10  // seconds
