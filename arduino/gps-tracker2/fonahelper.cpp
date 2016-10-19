@@ -116,7 +116,7 @@ void GPS_Data(float *fdata, int *idata) {
   idata[4] = MM;
   idata[5] = YY;
   if (gps_success) {
-    delete utime;
+    //delete utime;
     return &fdata;
   }
 }
