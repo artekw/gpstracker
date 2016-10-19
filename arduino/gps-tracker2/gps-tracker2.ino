@@ -44,24 +44,24 @@ SoftwareSerial fonaSS = SoftwareSerial(GSM_TX, GSM_RX);
 
 Adafruit_FONA fona = Adafruit_FONA(GSM_RST);
 
-float gps_data[4];
-int ctime[7];
+float gps_data[5];
+unsigned int ctime[7];
 char Lat[10];
 char Lon[10];
 //char Alt[10];
-char Course[8];
-char Speed[8];
+//char Course[8];
+//char Speed[8];
 char Date[14];
 
 time_t time;
 //byte offset = 0;
 
-StaticJsonBuffer<140> jsonBuffer;
+StaticJsonBuffer<130> jsonBuffer;
 
 // global - a tak nie powinno się robić
 JsonObject& root = jsonBuffer.createObject();
 
-char geodata[140];
+char geodata[130];
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -109,7 +109,7 @@ void setup() {
   while (! GPS()) {
     Serial.println(F("Retrying FONA"));
   }
-  //Serial.println(F("Connected to Cellular!"));
+  Serial.println(F("Connected to Cellular!"));
 
   Watchdog.reset();
   delay(5000);  // wait a few seconds to stabilize connection
@@ -159,28 +159,32 @@ void MQTT_connect() {
   Serial.print(F("Connecting to MQTT... "));
 
   while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
-    Serial.println(mqtt.connectErrorString(ret));
-    //Serial.println(F("Retrying MQTT connection in 5 seconds..."));
+    //Serial.println(mqtt.connectErrorString(ret));
+    Serial.println(F("Retrying MQTT connection in 5 seconds..."));
     mqtt.disconnect();
     delay(7000);  // wait 8 seconds
   }
   Serial.println(F("MQTT Connected!"));
-  if (! Serial.println(geodata)) {
-    Serial.println(F("Failed"));
-    } else {
-    Serial.println(F("data OK!"));
+  //if (! Serial.println(geodata)) {
+  //  Serial.println(F("Failed"));
+  //  } else {
+  //  Serial.println(F("data OK!"));
     
-  }
+
+  //}
 }
 
 void prepareData() {
-  void GPS_Data(float * fdata, int *idata);
+  void GPS_Data(float *fdata, int *idata);
   GPS_Data(&gps_data[0], &ctime[0]);
   dtostrf(gps_data[0], 6, 6, Lat);
   dtostrf(gps_data[1], 6, 6, Lon);
-  dtostrf(gps_data[2], 6, 2, Speed);
+  //dtostrf(gps_data[2], 6, 2, Speed);
+  //Speed = gps_data[2];
   //dtostrf(gps_data[3], 6, 2, Alt);
-  dtostrf(gps_data[4], 6, 2, Course);
+  //dtostrf(gps_data[4], 6, 2, Course);
+  //Course = gps_data[4];
+
 
   // prepare data to unixtime
   setTime(ctime[0], ctime[1], ctime[2], ctime[3], ctime[4], ctime[5]);
@@ -188,10 +192,15 @@ void prepareData() {
   //adjustTime(offset * SECS_PER_HOUR);
    // unixtime to string
   snprintf(Date, 14, "%lu", now());
-  float _speed = atof(Speed);
+  
+  int _speed = int(gps_data[2]);
+  //float _speed = atof(Speed);
   if (_speed < SPEED_TR) _speed = 0;
+  
   uint16_t vbat;
-  if (! fona.getBattPercent(&vbat)) vbat = 0;
+  //if (! fona.getBattPercent(&vbat)) vbat = 0;
+  if (! fona.getBattVoltage(&vbat)) vbat = 0;
+  //fona.getBattVoltage
         //} else {
          // Serial.print(F("VPct = ")); Serial.print(vbat); Serial.println(F("%"));
   //}
@@ -207,7 +216,7 @@ void prepareData() {
   //root["batt"] = 100;
   root.set("batt",vbat);
   //root["cog"] = atof(Course);
-  root.set("cog",atof(Course));
+  root.set("cog",int(gps_data[4]));
   //root["lat"] = Lat;
   root.set("lat",Lat);
   //root["lon"] = Lon;
@@ -219,6 +228,9 @@ void prepareData() {
   //root["tst"] = Date;
   root.set("tst",atol(Date));
   
-  root.printTo(geodata, 140);
+  root.printTo(geodata, 130);
+
+
+
 
 }
