@@ -8,13 +8,13 @@
 extern Adafruit_FONA fona;
 extern SoftwareSerial fonaSS;
 
-char utime[20];
-int YY;
-byte MM;
-byte DD;
-byte hh;
-byte mm;
-byte ss;
+char utime[14];
+uint16_t YY;
+uint16_t MM;
+uint16_t DD;
+uint16_t hh;
+uint16_t mm;
+uint16_t ss;
 
 // flags
 byte gps_enabled = 0;
@@ -23,7 +23,7 @@ byte gps_enabled = 0;
 boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *username, const __FlashStringHelper *password) {
   Watchdog.reset();
 
-  Serial.println(F("Initializing FONA....(May take 3 seconds)"));
+  //Serial.println(F("Initializing FONA....(May take 3 seconds)"));
   
   fonaSS.begin(9600); // if you're using software serial
   
@@ -34,7 +34,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
   fonaSS.println("AT+CMEE=2");
   Serial.println(F("FONA is OK"));
   Watchdog.reset();
-  Serial.println(F("Checking for network..."));
+ // Serial.println(F("Checking for network..."));
   while (fona.getNetworkStatus() != 1) {
    delay(500);
   }
@@ -45,7 +45,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
   
   fona.setGPRSNetworkSettings(apn, username, password);
 
-  Serial.println(F("Disabling GPRS"));
+  //Serial.println(F("Disabling GPRS"));
   fona.enableGPRS(false);
   
   Watchdog.reset();
@@ -54,7 +54,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
 
   Serial.println(F("Enabling GPRS"));
   if (!fona.enableGPRS(true)) {
-    Serial.println(F("Failed to turn GPRS on"));  
+    //Serial.println(F("Failed to turn GPRS on"));  
     return false;
   }
 
@@ -68,7 +68,7 @@ boolean GPS() {
   if (gps_enabled == 0 ) {
     Serial.println(F("Enabling GPS"));
     if (!fona.enableGPS(true)) {
-      Serial.println(F("Failed to turn GPS on"));  
+      //Serial.println(F("Failed to turn GPS on"));  
       return false;
     }
     else {
@@ -81,7 +81,7 @@ boolean GPS() {
   Watchdog.reset();
   
   Watchdog.reset();
-  Serial.println(F("Looking for satelites"));
+  //Serial.println(F("Looking for satelites"));
   int8_t stat;
   stat = fona.GPSstatus();
   if (stat < 0 or stat == 0 or stat == 1) {

@@ -24,6 +24,7 @@
 */
 
 #include "config.h"
+#include <TimeLib.h>
 #include <Time.h>
 #include <Adafruit_SleepyDog.h>
 #include <SoftwareSerial.h>
@@ -31,6 +32,7 @@
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_FONA.h"
 #include <ArduinoJson.h>
+#include <stdlib.h>
 
 /*************************** FONA Pins ***********************************/
 
@@ -46,20 +48,20 @@ float gps_data[4];
 int ctime[7];
 char Lat[10];
 char Lon[10];
-char Alt[10];
-char Course[10];
-char Speed[10];
-char Date[16];
+//char Alt[10];
+char Course[8];
+char Speed[8];
+char Date[14];
 
 time_t time;
-byte offset = 0;
+//byte offset = 0;
 
-StaticJsonBuffer<200> jsonBuffer;
+StaticJsonBuffer<140> jsonBuffer;
 
 // global - a tak nie powinno się robić
 JsonObject& root = jsonBuffer.createObject();
 
-char geodata[200];
+char geodata[140];
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -102,12 +104,12 @@ void setup() {
 
   // Initialise the FONA module
   while (! FONAconnect(F(GSM_APN), F(GSM_USERNAME), F(GSM_PASSWORD))) {
-    Serial.println("Retrying FONA");
+    Serial.println(F("Retrying FONA"));
   }
   while (! GPS()) {
-    Serial.println("Retrying FONA");
+    Serial.println(F("Retrying FONA"));
   }
-  Serial.println(F("Connected to Cellular!"));
+  //Serial.println(F("Connected to Cellular!"));
 
   Watchdog.reset();
   delay(5000);  // wait a few seconds to stabilize connection
@@ -130,7 +132,7 @@ void loop() {
 
 
   Serial.print(F("\nSending "));
-  Serial.print("...");
+  //Serial.print(F("..."));
   if (! feed.publish(geodata)) {
     Serial.println(F("Failed"));
     txfailures++;
@@ -154,15 +156,21 @@ void MQTT_connect() {
     return;
   }
 
-  Serial.print("Connecting to MQTT... ");
+  Serial.print(F("Connecting to MQTT... "));
 
   while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
     Serial.println(mqtt.connectErrorString(ret));
-    Serial.println("Retrying MQTT connection in 5 seconds...");
+    //Serial.println(F("Retrying MQTT connection in 5 seconds..."));
     mqtt.disconnect();
-    delay(5000);  // wait 5 seconds
+    delay(7000);  // wait 8 seconds
   }
-  Serial.println("MQTT Connected!");
+  Serial.println(F("MQTT Connected!"));
+  if (! Serial.println(geodata)) {
+    Serial.println(F("Failed"));
+    } else {
+    Serial.println(F("data OK!"));
+    
+  }
 }
 
 void prepareData() {
@@ -170,37 +178,47 @@ void prepareData() {
   GPS_Data(&gps_data[0], &ctime[0]);
   dtostrf(gps_data[0], 6, 6, Lat);
   dtostrf(gps_data[1], 6, 6, Lon);
-  dtostrf(gps_data[2], 2, 2, Speed);
-  dtostrf(gps_data[3], 6, 2, Alt);
+  dtostrf(gps_data[2], 6, 2, Speed);
+  //dtostrf(gps_data[3], 6, 2, Alt);
   dtostrf(gps_data[4], 6, 2, Course);
 
   // prepare data to unixtime
   setTime(ctime[0], ctime[1], ctime[2], ctime[3], ctime[4], ctime[5]);
   // timezone
   //adjustTime(offset * SECS_PER_HOUR);
-
-
+   // unixtime to string
+  snprintf(Date, 14, "%lu", now());
+  float _speed = atof(Speed);
+  if (_speed < SPEED_TR) _speed = 0;
+  uint16_t vbat;
+  if (! fona.getBattPercent(&vbat)) vbat = 0;
+        //} else {
+         // Serial.print(F("VPct = ")); Serial.print(vbat); Serial.println(F("%"));
+  //}
   // {"tst":1476474031,"acc":1000,"_type":"location","alt":140,"lon":-90.48259734672334,"vac":10,"p":100.160530090332,"lat":38.75410327670748,"batt":100,"tid":"JT"}
   // Owntracks API: 
   // http://owntracks.org/booklet/tech/json/
-  root["_type"] = "location";
-  root["acc"] = 10;
-  root["alt"] = atof(Alt);
-  root["batt"] = 100;
-  root["cog"] = atof(Course);
-  root["lat"] = Lat;
-  root["lon"] = Lon;
-  root["tid"] = TID;
-
-  // unixtime to string
-  snprintf(Date, 16, "%lu", now());
+  //root["_type"] = "location";
+  root.set("_type","location");
+  //root["acc"] = 10;
+  root.set("acc",1);
+  //root["alt"] = atof(Alt);
+  //root.set("alt",atof(Alt));
+  //root["batt"] = 100;
+  root.set("batt",vbat);
+  //root["cog"] = atof(Course);
+  root.set("cog",atof(Course));
+  //root["lat"] = Lat;
+  root.set("lat",Lat);
+  //root["lon"] = Lon;
+  root.set("lon",Lon);
+  //root["tid"] = TID;
+  root.set("tid",TID);
+  //root["vel"] = _speed;
+  root.set("vel",_speed);
+  //root["tst"] = Date;
+  root.set("tst",atol(Date));
   
-  root["tst"] = Date;
-  
-  float _speed = atof(Speed);
-  if (_speed < SPEED_TR) _speed = 0;
-  root["vel"] = _speed;
-
-  root.printTo(geodata, 200);
+  root.printTo(geodata, 140);
 
 }
