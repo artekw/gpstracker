@@ -138,6 +138,7 @@ void loop() {
     txfailures++;
   } else {
     Serial.println(F("OK!"));
+    delete geodata;
     txfailures = 0;
   }
 
@@ -229,8 +230,7 @@ void prepareData() {
   root.set("tst",atol(Date));
   
   root.printTo(geodata, 130);
-
-
+delete gps_data,ctime,Lon,Lat,Date;
 
 
 }
