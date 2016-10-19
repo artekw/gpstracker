@@ -99,7 +99,7 @@ boolean GPS() {
 
 
 void GPS_Data(float *fdata, int *idata) {
-  float latitude, longitude, speed_kph, heading, speed_mph, altitude;
+  float latitude, longitude, speed_kph, heading, altitude;
   boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading, utime);
   sscanf(utime,"%04d%02d%02d%02d%02d%02d",&YY,&MM,&DD,&hh,&mm,&ss);
 
