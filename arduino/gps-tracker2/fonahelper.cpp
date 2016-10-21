@@ -10,11 +10,11 @@ extern SoftwareSerial fonaSS;
 
 char utime[14];
 int YY;
-int MM;
-int DD;
-int hh;
-int mm;
-int ss;
+byte DATEOTHER[5];
+//int DD;
+//int hh;
+//int mm;
+//int ss;
 
 // flags
 byte gps_enabled = 0;
@@ -33,7 +33,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
   }
   fonaSS.println("AT+CMEE=2");
   //Serial.println(F("FONA is OK"));
-  Watchdog.reset();
+  //Watchdog.reset();
  // Serial.println(F("Checking for network..."));
   while (fona.getNetworkStatus() != 1) {
    delay(500);
@@ -101,7 +101,7 @@ boolean GPS() {
 void GPS_Data(float *fdata, int *idata) {
   float latitude, longitude, speed_kph, heading, altitude;
   boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading, &utime[0]);
-  sscanf(utime,"%04d%02d%02d%02d%02d%02d",&YY,&MM,&DD,&hh,&mm,&ss);
+  sscanf(utime,"%04d%02d%02d%02d%02d%02d",&YY,DATEOTHER[0],DATEOTHER[1],DATEOTHER[2],DATEOTHER[3],DATEOTHER[4]);
 
   // put data into array
   fdata[0] = latitude;
@@ -109,11 +109,11 @@ void GPS_Data(float *fdata, int *idata) {
   fdata[2] = speed_kph;
   fdata[3] = altitude;
   fdata[4] = heading;
-  idata[0] = hh;
-  idata[1] = mm;
-  idata[2] = ss;
-  idata[3] = DD;
-  idata[4] = MM;
+  idata[0] = DATEOTHER[2];
+  idata[1] = DATEOTHER[3];
+  idata[2] = DATEOTHER[4];
+  idata[3] = DATEOTHER[1];
+  idata[4] = DATEOTHER[0];
   idata[5] = YY;
   if (&gps_success) {
     //delete utime;
@@ -121,3 +121,4 @@ void GPS_Data(float *fdata, int *idata) {
     
   }
 }
+
