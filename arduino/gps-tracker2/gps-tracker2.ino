@@ -33,6 +33,7 @@
 #include "Adafruit_MQTT_FONA.h"
 #include <ArduinoJson.h>
 //#include <stdlib.h>
+//#include <MemoryFree.h>
 
 /*************************** FONA Pins ***********************************/
 
@@ -56,13 +57,13 @@ Adafruit_FONA fona = Adafruit_FONA(GSM_RST);
 
 //byte offset = 0;
 
-StaticJsonBuffer<125> jsonBuffer;
+StaticJsonBuffer<120> jsonBuffer;
 
-// global - a tak nie powinno siÄ™ robiÄ‡
+// global - a tak nie powinno się robić
 JsonObject& root = jsonBuffer.createObject();
 //JsonObject *ROOT = &root;
 
-char geodata[125];
+char geodata[120];
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -116,10 +117,12 @@ void setup() {
   Watchdog.reset();
   delay(5000);  // wait a few seconds to stabilize connection
   Watchdog.reset();
+  
 }
 
 
 void loop() {
+//  Serial.println(freeMemory());
   prepareData();
   // Make sure to reset watchdog every loop iteration!
   Watchdog.reset();
@@ -141,13 +144,14 @@ void loop() {
     Serial.println(F("Sent Failed"));
     txfailures++;
   } else {
-    //Serial.println(F("OK!"));
+    Serial.println(F("Sent OK!"));
     txfailures = 0;
   }
 
   Watchdog.reset();
   delay(DELAY*1000);  // wait a few seconds to stabilize connection
   Watchdog.reset();
+  
 }
 
 // Function to connect and reconnect as necessary to the MQTT server.
@@ -175,6 +179,7 @@ void MQTT_connect() {
   //  Serial.println(F("data OK!"));
     
  // }
+   
 }
 
 void prepareData() {
@@ -224,9 +229,9 @@ void prepareData() {
   //root["cog"] = atof(Course);
  root.set("cog",int(gps_data[4]));
   //root["lat"] = Lat;
- root.set("lat",(gps_data[0]),7);
+ root.set("lat",(gps_data[0]),6);
   //root["lon"] = Lon;
- root.set("lon",(gps_data[1]),7);
+ root.set("lon",(gps_data[1]),6);
   //root["tid"] = TID;
  root.set("tid",TID);
   //root["vel"] = _speed;
@@ -234,7 +239,7 @@ void prepareData() {
   //root["tst"] = Date;
   //ROOT->set("tst",atol(Date));
  root.set("tst",uxdate);
- root.printTo(geodata, 125);
+ root.printTo(geodata, 120);
 
 
 
