@@ -8,13 +8,13 @@
 extern Adafruit_FONA fona;
 extern SoftwareSerial fonaSS;
 
-char utime[20];
+char utime[14];
 int YY;
-byte MM;
-byte DD;
-byte hh;
-byte mm;
-byte ss;
+int MM;
+int DD;
+int hh;
+int mm;
+int ss;
 
 // flags
 byte gps_enabled = 0;
@@ -23,18 +23,18 @@ byte gps_enabled = 0;
 boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *username, const __FlashStringHelper *password) {
   Watchdog.reset();
 
-  Serial.println(F("Initializing FONA....(May take 3 seconds)"));
+  //Serial.println(F("Initializing FONA....(May take 3 seconds)"));
   
-  fonaSS.begin(9600); // if you're using software serial
-  
+  //fonaSS.begin(*fonaSerial); // if you're using software serial
+  fonaSS.begin(9600);
   if (! fona.begin(fonaSS)) {           // can also try fona.begin(Serial1) 
     Serial.println(F("Couldn't find FONA"));
     return false;
   }
   fonaSS.println("AT+CMEE=2");
-  Serial.println(F("FONA is OK"));
+  //Serial.println(F("FONA is OK"));
   Watchdog.reset();
-  Serial.println(F("Checking for network..."));
+ // Serial.println(F("Checking for network..."));
   while (fona.getNetworkStatus() != 1) {
    delay(500);
   }
@@ -45,7 +45,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
   
   fona.setGPRSNetworkSettings(apn, username, password);
 
-  Serial.println(F("Disabling GPRS"));
+  //Serial.println(F("Disabling GPRS"));
   fona.enableGPRS(false);
   
   Watchdog.reset();
@@ -54,7 +54,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
 
   Serial.println(F("Enabling GPRS"));
   if (!fona.enableGPRS(true)) {
-    Serial.println(F("Failed to turn GPRS on"));  
+    //Serial.println(F("Failed to turn GPRS on"));  
     return false;
   }
 
@@ -66,7 +66,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
 
 boolean GPS() {
   if (gps_enabled == 0 ) {
-    Serial.println(F("Enabling GPS"));
+    //Serial.println(F("Enabling GPS"));
     if (!fona.enableGPS(true)) {
       Serial.println(F("Failed to turn GPS on"));  
       return false;
@@ -81,10 +81,10 @@ boolean GPS() {
   Watchdog.reset();
   
   Watchdog.reset();
-  Serial.println(F("Looking for satelites"));
-  int8_t stat;
+  //Serial.println(F("Looking for satelites"));
+  byte stat;
   stat = fona.GPSstatus();
-  if (stat < 0 or stat == 0 or stat == 1) {
+  if (stat < 0 or stat == 0  or stat == 1) {
     Serial.println(F("Not fixed!"));
     return false;
   }
@@ -99,9 +99,13 @@ boolean GPS() {
 
 
 void GPS_Data(float *fdata, int *idata) {
-  float latitude, longitude, speed_kph, heading, speed_mph, altitude;
-  boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading, utime);
+
+
+  
+  float latitude, longitude, speed_kph, heading, altitude;
+  boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading, &utime[0]);
   sscanf(utime,"%04d%02d%02d%02d%02d%02d",&YY,&MM,&DD,&hh,&mm,&ss);
+
 
   // put data into array
   fdata[0] = latitude;
@@ -115,7 +119,10 @@ void GPS_Data(float *fdata, int *idata) {
   idata[3] = DD;
   idata[4] = MM;
   idata[5] = YY;
-  if (gps_success) {
+
+  if (&gps_success) {
+    //delete utime;
     return &fdata;
+    
   }
 }
