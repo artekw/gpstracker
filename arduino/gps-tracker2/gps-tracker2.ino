@@ -25,14 +25,14 @@
 
 #include "config.h"
 #include <TimeLib.h>
-#include <Time.h>
+//#include "Time.h"
 #include <Adafruit_SleepyDog.h>
 #include <SoftwareSerial.h>
 #include "Adafruit_FONA.h"
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_FONA.h"
 #include <ArduinoJson.h>
-#include <stdlib.h>
+//#include <stdlib.h>
 
 /*************************** FONA Pins ***********************************/
 
@@ -41,34 +41,34 @@
 #define GSM_TX  3
 #define GSM_RST 4 // pin number 16 in sim808 throug diode to ground https://cdn-shop.adafruit.com/datasheets/SIM808_Hardware+Design_V1.00.pdf max 4.3 V
 SoftwareSerial fonaSS = SoftwareSerial(GSM_TX, GSM_RX);
-SoftwareSerial *FONASERIAL = &fonaSS;
+//SoftwareSerial *FONASERIAL = &fonaSS;
 Adafruit_FONA fona = Adafruit_FONA(GSM_RST);
-Adafruit_FONA *FONA = &fona;
+//Adafruit_FONA *FONA = &fona;
 float gps_data[5];
-int ctime[7];
-char Lat[10];
-char Lon[10];
+int ctime[6];
+//char Lat[10];
+//char Lon[10];
 //char Alt[10];
 //uint16_t Course;
 //uint16_t Speed;
-char Date[14];
+//char Date[14];
 
 time_t time;
 //byte offset = 0;
 
-StaticJsonBuffer<130> jsonBuffer;
+StaticJsonBuffer<125> jsonBuffer;
 
 // global - a tak nie powinno się robić
 JsonObject& root = jsonBuffer.createObject();
-JsonObject *ROOT = &root;
+//JsonObject *ROOT = &root;
 
-char geodata[130];
+char geodata[125];
 
 /************ Global State (you don't need to change this!) ******************/
 
 // Setup the FONA MQTT class by passing in the FONA class and MQTT server and login details.
-Adafruit_MQTT_FONA mqtt(FONA, AIO_SERVER, AIO_SERVERPORT);
-Adafruit_MQTT_FONA *MQTT(&mqtt);
+Adafruit_MQTT_FONA mqtt(&fona, AIO_SERVER, AIO_SERVERPORT);
+//Adafruit_MQTT_FONA *MQTT(&mqtt);
 // You don't need to change anything below this line!
 #define halt(s) { Serial.println(F( s )); while(1);  }
 
@@ -81,8 +81,8 @@ boolean GPS();
 /****************************** Feeds ***************************************/
 
 // Setup a feed called 'photocell' for publishing.
-Adafruit_MQTT_Publish feed = Adafruit_MQTT_Publish(MQTT, TOPIC);
-Adafruit_MQTT_Publish *FEED = &feed;
+Adafruit_MQTT_Publish feed = Adafruit_MQTT_Publish(&mqtt, TOPIC);
+//Adafruit_MQTT_Publish *FEED = &feed;
 /*************************** Sketch Code ************************************/
 
 // How many transmission failures in a row we're willing to be ok with before reset
@@ -136,7 +136,7 @@ void loop() {
   //Serial.print(F("\nSending "));
   //Serial.print(F("..."));
   
-  if (! FEED->publish(&geodata[0])) {
+  if (! feed.publish(geodata)) {
     
     Serial.println(F("Sent Failed"));
     txfailures++;
@@ -156,17 +156,17 @@ void MQTT_connect() {
   byte ret;
 
   // Stop if already connected.
-  if (MQTT->connected()) {
+  if (mqtt.connected()) {
     return;
   }
 
-  Serial.print(F("Connecting to MQTT... "));
+  //Serial.print(F("Connecting to MQTT... "));
 
-  while ((ret = MQTT->connect()) != 0) { // connect will return 0 for connected
+  while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
     //Serial.println(mqtt.connectErrorString(ret));
-    Serial.println(F("Retrying MQTT connection in 5 seconds..."));
-    MQTT->disconnect();
-    delay(7000);  // wait 7 seconds
+    Serial.println(F("Retrying MQTT connection in 10 seconds..."));
+    mqtt.disconnect();
+    delay(10000);  // wait 8 seconds
   }
   Serial.println(F("MQTT Connected!"));
   //if (! Serial.println(geodata)) {
@@ -179,9 +179,9 @@ void MQTT_connect() {
 
 void prepareData() {
   void GPS_Data(float *fdata, int *idata);
-  GPS_Data(&gps_data[0], &ctime[0]);
-  dtostrf(gps_data[0], 6, 6, &Lat[0]);
-  dtostrf(gps_data[1], 6, 6, &Lon[0]);
+  GPS_Data(gps_data, ctime);
+  //dtostrf(gps_data[0], 6, 6, &Lat[0]);
+  //dtostrf(gps_data[1], 6, 6, &Lon[0]);
   //dtostrf(gps_data[2], 6, 2, Speed);
   //Speed = gps_data[2];
   //dtostrf(gps_data[3], 6, 2, Alt);
@@ -192,12 +192,17 @@ void prepareData() {
   // timezone
   //adjustTime(offset * SECS_PER_HOUR);
    // unixtime to string
-  snprintf(&Date[0], 14, "%lu", now());
-  int _speed = int(gps_data[2]);
-  if (_speed < SPEED_TR) _speed = 0;
+  //snprintf(&Date[0], 14, "%lu", now());
+  time_t uxdate = now();
+  //Serial.println(test);
+
+  //(int(gps_data[2]) >= 2 ? 0 : int(gps_data[2]));
+  
+  //int _speed = int(gps_data[2]);
+  //if (_speed < SPEED_TR) _speed = 0;
   int vbat;
   //if (! fona.getBattPercent(&vbat)) vbat = 0;
-  if (! FONA->getBattVoltage(&vbat)) vbat = 0;
+  if (! fona.getBattVoltage(&vbat)) vbat = 0;
   //fona.getBattVoltage
         //} else {
          // Serial.print(F("VPct = ")); Serial.print(vbat); Serial.println(F("%"));
@@ -206,27 +211,27 @@ void prepareData() {
   // Owntracks API: 
   // http://owntracks.org/booklet/tech/json/
   //root["_type"] = "location";
-  ROOT->set("_type","location");
+ root.set("_type","location");
   //root["acc"] = 10;
-  ROOT->set("acc",3);
+ root.set("acc",3);
   //root["alt"] = atof(Alt);
  // root.set("alt",atof(Alt));
   //root["batt"] = 100;
-  ROOT->set("batt",vbat);
+ root.set("batt",vbat);
   //root["cog"] = atof(Course);
-  ROOT->set("cog",int(gps_data[4]));
+ root.set("cog",int(gps_data[4]));
   //root["lat"] = Lat;
-  ROOT->set("lat",Lat);
+ root.set("lat",(gps_data[0]),7);
   //root["lon"] = Lon;
-  ROOT->set("lon",Lon);
+ root.set("lon",(gps_data[1]),7);
   //root["tid"] = TID;
-  ROOT->set("tid",TID);
+ root.set("tid",TID);
   //root["vel"] = _speed;
-  ROOT->set("vel",_speed);
+ root.set("vel",(int(gps_data[2]) <= 2 ? 0 : int(gps_data[2])));
   //root["tst"] = Date;
-  ROOT->set("tst",atol(Date));
-  
-  ROOT->printTo(geodata, 130);
+  //ROOT->set("tst",atol(Date));
+ root.set("tst",uxdate);
+ root.printTo(geodata, 125);
 
 
 
