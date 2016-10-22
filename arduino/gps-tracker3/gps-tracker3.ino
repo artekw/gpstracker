@@ -116,7 +116,16 @@ void setup() {
 
 
 void loop() {
-
+/*
+  fonaSS.println(F("AT+CGPSINF=0"));
+  delay(20);
+   
+   while(fonaSS.available() >0) {
+   Serial.print(char(fonaSS.read()));
+   delay(2);
+   }
+   Serial.println();
+*/
   //  Serial.println(freeMemory());
   prepareData();
   // Make sure to reset watchdog every loop iteration!
@@ -178,19 +187,30 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
     Serial.println(F("Couldn't find FONA"));
     return false;
   }
-  Serial.print(F("Check FONA err:\"AT+CMEE=2\" - expect OK"));
-  if (sendATcommand("AT+CMEE=2","OK", 200)) { 
-  Serial.println();
-  Serial.println(F("GPS data: "));
-  sendATcommand("AT+CGPSINF=0", "AT+CGPSINF=0\r\n\r\n", 2000);
-  }else{
-    Serial.println(F("errors ocured"));
- 
-   while(fonaSS.available() >0) {
-   Serial.print(fonaSS.read());
+  Serial.println(F("Check FONA err:\"AT+CMEE=2\" - expect OK"));
+  fonaSS.flush();
+  //if (sendATcommand("AT+CMEE=2","OK", 200)) { 
+  fonaSS.println("AT+CMEE=2");
+  delay(20);
+  //Serial.println();
+  //Serial.println(F("GPS data: "));
+   
+   while(fonaSS.available() !=0) {
+   Serial.print(char(fonaSS.read()));
+  delay(1);
    }
+   fonaSS.flush();
    Serial.println();
-  }
+  
+  //sendATcommand("AT+CGPSINF=0", "AT+CGPSINF=0\r\n\r\n", 2000);
+  //}else{
+  //  Serial.println(F("errors ocured"));
+ 
+   //while(fonaSS.available() >0) {
+   //Serial.print(toascii(fonaSS.read()));
+   //}
+   //Serial.println();
+ // }
  
  //Serial.println(sendATcommand("AT+CGPSINF=0", "AT+CGPSINF=0\r\n\r\n", 2000));
   
@@ -268,6 +288,9 @@ boolean GPS() {
 
 
 void GPS_Data(float *fdata, int *idata) {
+
+    
+
   
   float latitude, longitude, speed_kph, heading, altitude;
   boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading, &utime[0]);
@@ -358,4 +381,3 @@ int8_t sendATcommand(char* ATcommand, char* expected_answer, unsigned int timeou
 
     return answer;
 }
-
