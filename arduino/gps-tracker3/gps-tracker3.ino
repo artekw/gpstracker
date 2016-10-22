@@ -202,7 +202,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
    }
    fonaSS.flush();
    Serial.println();
-   return true;
+
    }
   
   Watchdog.reset();
