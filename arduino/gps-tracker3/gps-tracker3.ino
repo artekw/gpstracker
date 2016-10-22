@@ -63,7 +63,7 @@ int ss;
 
 // Setup the FONA MQTT class by passing in the FONA class and MQTT server and login details.
 Adafruit_MQTT_FONA mqtt(&fona, AIO_SERVER, AIO_SERVERPORT);
-//Adafruit_MQTT_FONA *MQTT(&mqtt);
+
 // You don't need to change anything below this line!
 #define halt(s) { Serial.println(F( s )); while(1);  }
 
@@ -77,7 +77,7 @@ boolean GPS();
 
 // Setup a feed called 'photocell' for publishing.
 Adafruit_MQTT_Publish feed = Adafruit_MQTT_Publish(&mqtt, TOPIC);
-//Adafruit_MQTT_Publish *FEED = &feed;
+
 /*************************** Sketch Code ************************************/
 
 // How many transmission failures in a row we're willing to be ok with before reset
@@ -93,7 +93,7 @@ void setup() {
 
   Serial.begin(115200);
 
-  Serial.println(F("GPS Tracker"));
+  Serial.println(F("GPS Tracker starting..."));
 
   Watchdog.reset();
   delay(5000);  // wait a few seconds to stabilize connection
@@ -102,9 +102,11 @@ void setup() {
   // Initialise the FONA module
   while (! FONAconnect(F(GSM_APN), F(GSM_USERNAME), F(GSM_PASSWORD))) {
     Serial.println(F("Retrying FONA GSM"));
+    Watchdog.reset();
   }
   while (! GPS()) {
     Serial.println(F("Retrying FONA GPS"));
+    Watchdog.reset();
   }
   Serial.println(F("Connected to Cellular!"));
 
@@ -170,7 +172,7 @@ void MQTT_connect() {
     Serial.println(F("Retrying MQTT connection in 10 seconds..."));
     mqtt.disconnect();
     Watchdog.disable();
-    delay(10000);  // wait 7 seconds
+    delay(10000);  // wait 10 seconds
     Watchdog.enable(8000);
     Watchdog.reset();
   }
@@ -186,44 +188,28 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
   if (! fona.begin(fonaSS)) {           // can also try fona.begin(Serial1) 
     Serial.println(F("Couldn't find FONA"));
     return false;
-  }
-  Serial.println(F("Check FONA err:\"AT+CMEE=2\" - expect OK"));
-  fonaSS.flush();
+  } else {
+   Serial.println(F("Check FONA err:\"AT+CMEE=2\" - expect OK"));
+   fonaSS.flush();
   //if (sendATcommand("AT+CMEE=2","OK", 200)) { 
-  fonaSS.println("AT+CMEE=2");
-  delay(20);
-  //Serial.println();
-  //Serial.println(F("GPS data: "));
+   fonaSS.println("AT+CMEE=2");
+   delay(20);
+  
    
-   while(fonaSS.available() !=0) {
+   while(fonaSS.available() >0) {
    Serial.print(char(fonaSS.read()));
-  delay(1);
+   delay(1);
    }
    fonaSS.flush();
    Serial.println();
-  
-  //sendATcommand("AT+CGPSINF=0", "AT+CGPSINF=0\r\n\r\n", 2000);
-  //}else{
-  //  Serial.println(F("errors ocured"));
- 
-   //while(fonaSS.available() >0) {
-   //Serial.print(toascii(fonaSS.read()));
-   //}
-   //Serial.println();
- // }
- 
- //Serial.println(sendATcommand("AT+CGPSINF=0", "AT+CGPSINF=0\r\n\r\n", 2000));
-  
-//fonaSS.read();
-//delay(1000);
-  //while(fonaSS.available() > 0) {
-   // Serial.println(fonaSS.read());
- // }
+   return true;
+   }
   
   Watchdog.reset();
   while (fona.getNetworkStatus() != 1) {
    Serial.println(F("Waiting for network..."));
-   delay(500);
+   delay(1000);
+   Watchdog.reset();
   }
 
   Watchdog.reset();
@@ -232,7 +218,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
   
   fona.setGPRSNetworkSettings(apn, username, password);
 
-  Serial.println(F("Disabling GPRS"));
+  //Serial.println(F("Disabling GPRS"));
   fona.enableGPRS(false);
   
   Watchdog.reset();
@@ -254,7 +240,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
 
 boolean GPS() {
   if (gps_enabled == 0 ) {
-    //Serial.println(F("Enabling GPS"));
+    Serial.println(F("Enabling GPS"));
     if (!fona.enableGPS(true)) {
       Serial.println(F("Failed to turn GPS on"));  
       return false;
@@ -266,8 +252,6 @@ boolean GPS() {
 
   Watchdog.reset();
   delay(5000);  // wait a few seconds to stabilize connection
-  Watchdog.reset();
-  
   Watchdog.reset();
   byte stat;
   stat = fona.GPSstatus();
@@ -286,11 +270,7 @@ boolean GPS() {
 
 //GPS data
 
-
 void GPS_Data(float *fdata, int *idata) {
-
-    
-
   
   float latitude, longitude, speed_kph, heading, altitude;
   boolean gps_success = fona.getGPS(&latitude, &longitude, &altitude, &speed_kph, &heading, &utime[0]);
@@ -345,6 +325,7 @@ void prepareData() {
 
 }
 
+/*
 int8_t sendATcommand(char* ATcommand, char* expected_answer, unsigned int timeout){
 
     uint8_t x=0,  answer=0;
@@ -381,3 +362,4 @@ int8_t sendATcommand(char* ATcommand, char* expected_answer, unsigned int timeou
 
     return answer;
 }
+*/
