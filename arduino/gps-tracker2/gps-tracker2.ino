@@ -31,7 +31,7 @@
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_FONA.h"
 #include <ArduinoJson.h>
-//#include <MemoryFree.h>
+#include <MemoryFree.h>
 
 /*************************** FONA Pins ***********************************/
 
@@ -48,6 +48,10 @@ StaticJsonBuffer<122> jsonBuffer;
 // global - a tak nie powinno się robić
 JsonObject& root = jsonBuffer.createObject();
 
+        // current state LDR
+float lastmovement_W = 0;
+float lastmovement_L = 0;
+uint8_t readytosend;
 
 char geodata[122];
 
@@ -78,14 +82,14 @@ byte txfailures = 0;
 
 void setup() {
   
-  while (!Serial);
+  //while (!fonaSS);
 
   // Watchdog is optional!
-  Watchdog.enable(8000);
+  //Watchdog.enable(8000);
 
   Serial.begin(115200);
 
-  Serial.println(F("GPS Tracker"));
+  Serial.println(F("GPS Tracker starting ..."));
 
   Watchdog.reset();
   delay(5000);  // wait a few seconds to stabilize connection
@@ -93,6 +97,7 @@ void setup() {
 
   // Initialise the FONA module
   while (! FONAconnect(F(GSM_APN), F(GSM_USERNAME), F(GSM_PASSWORD))) {
+
     Serial.println(F("Retrying FONA GSM"));
   }
   while (! GPS()) {
@@ -109,32 +114,41 @@ void setup() {
 
 
 void loop() {
-//  Serial.println(freeMemory());
+  //Serial.println(freeMemory());
   prepareData();
   // Make sure to reset watchdog every loop iteration!
-  Watchdog.reset();
+  //Watchdog.reset();
 
   // Ensure the connection to the MQTT server is alive (this will make the first
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
   // function definition further below.
-  MQTT_connect();
+  
+if (readytosend != 0) {
+  
+    MQTT_connect();
 
-  Watchdog.reset();
-  // Now we can publish stuff!
+    Watchdog.reset();
+    // Now we can publish stuff!
 
-  if (! feed.publish(geodata)) {
+    if (! feed.publish(geodata)) {
     
-    Serial.println(F("Sent Failed"));
-    txfailures++;
-  } else {
-    Serial.println(F("Sent OK!"));
-    txfailures = 0;
-  }
-
+       Serial.println(F("Sent Failed"));
+       txfailures++;
+    } else {
+       Serial.println(F("Sent OK!"));
+       //Serial.println(freeMemory());
+      txfailures = 0;
+	  readytosend = 0;
+    }
+} else {
+	
+	Serial.println(F("No movement of 10 meters waiting ..."));
+	readytosend = 0;
+}
   Watchdog.reset();
   delay(DELAY*1000);  // wait a few seconds to stabilize connection
   Watchdog.reset();
-  
+
 }
 
 // Function to connect and reconnect as necessary to the MQTT server.
@@ -150,11 +164,11 @@ void MQTT_connect() {
   Serial.print(F("Connecting to MQTT... "));
 
   while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
-    Serial.println(F("Retrying MQTT connection in 10 seconds..."));
+    Serial.println(F("Retrying MQTT connection in 5 seconds..."));
     mqtt.disconnect();
-    Watchdog.disable();
-    delay(10000);  // wait 10 seconds
-    Watchdog.enable(8000);
+    //Watchdog.disable();
+    delay(5000);  // wait 5 seconds
+    //Watchdog.enable(8000);
     Watchdog.reset();
   }
   Serial.println(F("MQTT Connected!"));
@@ -167,7 +181,7 @@ void prepareData() {
   int ctime[6];
   float gps_data[5];
   void GPS_Data(float *fdata, int *idata);
-  GPS_Data(gps_data, ctime);
+  GPS_Data(&gps_data[0], &ctime[0]);
   setTime(ctime[0], ctime[1], ctime[2], ctime[3], ctime[4], ctime[5]);
   time_t uxdate = now();
   int vbat;
@@ -188,6 +202,38 @@ void prepareData() {
     root.set("vel",(int(gps_data[2]) <= 2 ? 0 : int(gps_data[2])));
     root.set("tst",uxdate);
     root.printTo(geodata, 122);
-
-
+    //sprintf((gps_data[0]),%f, movement_W);
+	if ((((gps_data[0]) - lastmovement_W ) > float(0.0010000)) or (((gps_data[1]) - lastmovement_L ) > float(0.0010000))) {
+	
+	readytosend = 1;
+  /*
+  Serial.println();
+  Serial.print(F("Latitude OLD: "));
+  Serial.print(lastmovement_W,7);
+  Serial.println();
+  Serial.print(F("Longitude OLD: "));
+  Serial.print(lastmovement_L,7);
+  Serial.println();
+  */
+	lastmovement_W = (gps_data[0]);
+	lastmovement_L = (gps_data[1]);
+  /*Serial.println();
+  Serial.println(F("Latitude: "));
+  Serial.print(lastmovement_W,7);
+  Serial.println();
+  Serial.println(F("Longitude: "));
+  Serial.print(lastmovement_L,7);
+  Serial.println();
+  */
+	} else {
+     readytosend = 0;
+	}
+  Serial.println();
+  Serial.print(F("Latitude OLD: "));
+  Serial.print(lastmovement_W,7);
+  Serial.println();
+  Serial.print(F("Longitude OLD: "));
+  Serial.print(lastmovement_L,7);
+  Serial.println();
+ 
 }
