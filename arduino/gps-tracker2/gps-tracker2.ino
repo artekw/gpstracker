@@ -91,9 +91,9 @@ void setup() {
 
   Serial.println(F("GPS Tracker starting ..."));
 
-  Watchdog.reset();
+  //Watchdog.reset();
   delay(5000);  // wait a few seconds to stabilize connection
-  Watchdog.reset();
+  //Watchdog.reset();
 
   // Initialise the FONA module
   while (! FONAconnect(F(GSM_APN), F(GSM_USERNAME), F(GSM_PASSWORD))) {
@@ -102,13 +102,13 @@ void setup() {
   }
   while (! GPS()) {
     Serial.println(F("Retrying FONA GPS"));
-    Watchdog.reset();
+    //Watchdog.reset();
   }
   Serial.println(F("Connected to Cellular!"));
 
-  Watchdog.reset();
+  //Watchdog.reset();
   delay(5000);  // wait a few seconds to stabilize connection
-  Watchdog.reset();
+  //Watchdog.reset();
   
 }
 
@@ -117,7 +117,7 @@ void loop() {
   //Serial.println(freeMemory());
   prepareData();
   // Make sure to reset watchdog every loop iteration!
-  //Watchdog.reset();
+  ////Watchdog.reset();
 
   // Ensure the connection to the MQTT server is alive (this will make the first
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
@@ -127,7 +127,7 @@ if (readytosend != 0) {
   
     MQTT_connect();
 
-    Watchdog.reset();
+    //Watchdog.reset();
     // Now we can publish stuff!
 
     if (! feed.publish(geodata)) {
@@ -145,9 +145,9 @@ if (readytosend != 0) {
 	Serial.println(F("No movement of 10 meters waiting ..."));
 	readytosend = 0;
 }
-  Watchdog.reset();
+  //Watchdog.reset();
   delay(DELAY*1000);  // wait a few seconds to stabilize connection
-  Watchdog.reset();
+  //Watchdog.reset();
 
 }
 
@@ -169,10 +169,10 @@ void MQTT_connect() {
     //Watchdog.disable();
     delay(5000);  // wait 5 seconds
     //Watchdog.enable(8000);
-    Watchdog.reset();
+    //Watchdog.reset();
   }
   Serial.println(F("MQTT Connected!"));
-  Watchdog.reset();
+  //Watchdog.reset();
 }
 
 
