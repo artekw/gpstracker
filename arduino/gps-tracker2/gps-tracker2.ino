@@ -42,7 +42,7 @@
 SoftwareSerial fonaSS = SoftwareSerial(GSM_TX, GSM_RX);
 
 Adafruit_FONA fona = Adafruit_FONA(GSM_RST);
-
+//delay(200);
 StaticJsonBuffer<122> jsonBuffer;
 
 // global - a tak nie powinno się robić
@@ -52,13 +52,15 @@ JsonObject& root = jsonBuffer.createObject();
 float lastmovement_W = 0;
 float lastmovement_L = 0;
 uint8_t readytosend;
+uint8_t reporter;
 
 char geodata[122];
 
 /************ Global State (you don't need to change this!) ******************/
-
+#define MQTT_CONN_KEEPALIVE 900
+//#define MQTT_DEBUG
 // Setup the FONA MQTT class by passing in the FONA class and MQTT server and login details.
-Adafruit_MQTT_FONA mqtt(&fona, AIO_SERVER, AIO_SERVERPORT);
+Adafruit_MQTT_FONA mqtt(&fona, AIO_SERVER, AIO_SERVERPORT,AIO_USERNAME,AIO_PASSWORD);
 
 // You don't need to change anything below this line!
 #define halt(s) { Serial.println(F( s )); while(1);  }
@@ -73,6 +75,7 @@ boolean GPS();
 
 // Setup a feed called 'photocell' for publishing.
 Adafruit_MQTT_Publish feed = Adafruit_MQTT_Publish(&mqtt, TOPIC);
+// Adjust as necessary, in seconds.  Default to 5 minutes.
 
 /*************************** Sketch Code ************************************/
 
@@ -139,6 +142,7 @@ if (readytosend != 0) {
        //Serial.println(freeMemory());
       txfailures = 0;
 	  readytosend = 0;
+    //delete[] geodata;
     }
 } else {
 	
@@ -154,6 +158,7 @@ if (readytosend != 0) {
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
 void MQTT_connect() {
+  
   byte ret;
 
   // Stop if already connected.
@@ -163,13 +168,13 @@ void MQTT_connect() {
 
   Serial.print(F("Connecting to MQTT... "));
 
-  while ((ret = mqtt.connect()) != 0) { // connect will return 0 for connected
-    Serial.println(F("Retrying MQTT connection in 5 seconds..."));
+  while ((ret = mqtt.connect()) != 0 ) { // connect will return 0 for connected
+    delay(500);
+    //Serial.println(mqtt.connectErrorString(ret));
     mqtt.disconnect();
-    //Watchdog.disable();
-    delay(5000);  // wait 5 seconds
-    //Watchdog.enable(8000);
-    //Watchdog.reset();
+    Serial.println(F("Retrying MQTT connection in 1 seconds..."));
+    //mqtt.connect();
+    delay(1000);  // wait 5 seconds
   }
   Serial.println(F("MQTT Connected!"));
   //Watchdog.reset();
@@ -203,8 +208,8 @@ void prepareData() {
     root.set("tst",uxdate);
     root.printTo(geodata, 122);
     //sprintf((gps_data[0]),%f, movement_W);
-	if ((((gps_data[0]) - lastmovement_W ) > float(0.0010000)) or (((gps_data[1]) - lastmovement_L ) > float(0.0010000))) {
-	
+	if ((((gps_data[0]) - lastmovement_W ) > 0.0010000) or (((gps_data[1]) - lastmovement_L ) > 0.0010000) or reporter == 100) {
+	reporter=0;
 	readytosend = 1;
   /*
   Serial.println();
@@ -227,6 +232,11 @@ void prepareData() {
   */
 	} else {
      readytosend = 0;
+
+     // reporter every 15 min - position reported even not moved
+     reporter++;
+     
+     
 	}
   Serial.println();
   Serial.print(F("Latitude OLD: "));
@@ -235,5 +245,11 @@ void prepareData() {
   Serial.print(F("Longitude OLD: "));
   Serial.print(lastmovement_L,7);
   Serial.println();
- 
+  Serial.print(F("Times checking, when 100 reporting heartbit now: "));
+  Serial.println(reporter);
+  Serial.println();
+
+  
 }
+  //void sendATcommand(char *ATcommand, unsigned int *timeout);
+
