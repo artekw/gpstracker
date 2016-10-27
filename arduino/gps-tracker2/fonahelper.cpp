@@ -14,6 +14,51 @@ extern SoftwareSerial fonaSS;
 byte gps_enabled = 0;
 
 
+//send AT command and wait for responce and print
+
+uint8_t sendATcommand(char* ATcommand,unsigned int *timeout){
+
+    uint8_t x=0,  answer=0;
+    char response[50];
+    unsigned long previous;
+
+    while( fonaSS.available() > 0) fonaSS.read();    // Clean the input buffer
+    fonaSS.flush();
+    if (ATcommand[0] != '\0')
+    {
+        fonaSS.println(ATcommand);    // Send the AT command 
+        delay(20);
+    }
+
+
+    x = 0;
+    previous = millis();
+    Serial.println();
+    Serial.print(F("Execute AT command: "));
+    Serial.println(ATcommand);
+
+    Serial.print(F("Result: "));
+    // this loop waits for the answer
+    do{
+        if(fonaSS.available() > 0){    // if there are data in the UART input buffer, reads it and checks for the asnwer
+            response[x] = fonaSS.read();
+            
+            Serial.print(response[x]);
+            //delay(20);
+            x++;
+            answer = 1;
+          } else {
+            answer = 0;
+         }
+    }while(((millis() - previous) < &timeout));    // Waits for the asnwer with time out
+    //delete buffer - freeup memory
+    delete[] response,previous,timeout;
+    return answer;
+
+}
+
+
+
 boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *username, const __FlashStringHelper *password) {
   //Watchdog.reset();
   fonaSS.begin(9600);
@@ -21,29 +66,34 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
     Serial.println(F("Couldn't find FONA"));
     return false;
   } else {
-   Serial.println(F("Check FONA err:\"AT+CMEE=2\" - expect OK"));
-   //fonaSS.flush();
-  //if (sendATcommand("AT+CMEE=2","OK", 200)) { 
-   fonaSS.println(F("AT+CMEE=2"));
-   delay(20);
-  
-   
-   while(fonaSS.available() >0) {
-   Serial.print(char(fonaSS.read()));
-   delay(1);
-   }
-   //fonaSS.flush();
-   Serial.println();
+  //Serial.print(F("Check FONA err: - expect OK"));
+ //set additionalcommands to modem  
+ //   sendATcommand("AT+CMEE=2", 200);
+//  Serial.print(F("Delete all SMS - expect OK"));
+//    sendATcommand("AT+CMGD=1,4",200);
+   //sendATcommand("AT&W",200);
+   //Serial.print(F("Registration IP - expect OK"));
+   //sendATcommand("AT+SAPBR=2,1",200);
+   //reset GPS
+   //led blink 0 1 2
+   //AT+CSGS=2
+   //delete smses from sim
+   //"AT+CMGD=1" 
+   //check errors 
+   //"AT+CMEE=2"
+   //disable battery charge - power consumption
+   //"AT+CGPSRST=0"
+   //"AT&W"
+   // reset to default
+   //"ATZ0";
+   //"AT&W";
 
-   }
-  
-   //Watchdog.reset();
-
+  }
   
   while (! fona.getNetworkStatus()) {
    Serial.println(F("Waiting for network..."));
-
-       
+    //dey(500);
+    /*   
         uint8_t n = fona.getRSSI();
         int8_t r;
 
@@ -57,7 +107,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
    Serial.print(r); Serial.println(F(" dBm"));
    
    delay(2000);
-   
+   */
            
    //Watchdog.reset();
   }
@@ -67,10 +117,9 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
   //Watchdog.reset();
   fona.setGPRSNetworkSettings(apn, username, password);
   //Serial.println(F("Disabling GPRS"));
-  //delay(1000); 
   fona.enableGPRS(false);
   //Watchdog.reset();
-  delay(5000);  // wait a few seconds to stabilize connection
+  //delay(5000);  // wait a few seconds to stabilize connection
   //Watchdog.reset();
 
   Serial.println(F("Enabling GPRS"));
@@ -90,6 +139,7 @@ boolean GPS() {
     Serial.println(F("Enabling GPS"));
     if (!fona.enableGPS(true)) {
       Serial.println(F("Failed to turn GPS on"));  
+
       return false;
     }
     else {
@@ -102,11 +152,13 @@ boolean GPS() {
   //Watchdog.reset();
   byte stat;
   stat = fona.GPSstatus();
-  delay(100);
+  
   if (stat < 0 or stat == 0  or stat == 1) {
     
     Serial.println(F("Not fixed!"));
+
     return false;
+    delay(1000);
   }
   if (stat >= 2) {
     Serial.println(F("GPS Fixed"));
@@ -127,3 +179,6 @@ void GPS_Data(float *fdata, int *idata) {
     
   }
 }
+
+
+
