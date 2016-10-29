@@ -1,10 +1,11 @@
 #include <Adafruit_SleepyDog.h>
 #include <SoftwareSerial.h>
 #include "Adafruit_FONA.h"
-
+#include "config.h"
 
 #define halt(s) { Serial.println(F( s )); while(1);  }
 
+const char MQTT_GSM_APN[] PROGMEM = GSM_APN; 
 extern Adafruit_FONA fona;
 extern SoftwareSerial fonaSS;
 
@@ -19,7 +20,7 @@ byte gps_enabled = 0;
 uint8_t sendATcommand(char* ATcommand,unsigned int *timeout){
 
     uint8_t x=0,  answer=0;
-    char response[50];
+    char response[30];
     unsigned long previous;
 
     while( fonaSS.available() > 0) fonaSS.read();    // Clean the input buffer
@@ -70,7 +71,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
  //set additionalcommands to modem  
  //   sendATcommand("AT+CMEE=2", 200);
 //  Serial.print(F("Delete all SMS - expect OK"));
-//    sendATcommand("AT+CMGD=1,4",200);
+//  sendATcommand("AT+CMGD=1,4",200);
    //sendATcommand("AT&W",200);
    //Serial.print(F("Registration IP - expect OK"));
    //sendATcommand("AT+SAPBR=2,1",200);
@@ -179,6 +180,3 @@ void GPS_Data(float *fdata, int *idata) {
     
   }
 }
-
-
-
