@@ -52,16 +52,21 @@ JsonObject& root = jsonBuffer.createObject();
 float lastmovement_W = 0;
 float lastmovement_L = 0;
 uint8_t readytosend;
-uint8_t reporter;
+uint16_t reporter;
 
 char geodata[122];
 
 /************ Global State (you don't need to change this!) ******************/
-#define MQTT_CONN_KEEPALIVE 900
+const char MQTT_SERVER[] PROGMEM    = AIO_SERVER;
+//const char MQTT_USERNAME[] PROGMEM  = AIO_USERNAME;
+//const char MQTT_PASSWORD[] PROGMEM  = AIO_PASSWORD;
+const char MQTT_TOPIC[] PROGMEM = TOPIC;  
+
+
 //#define MQTT_DEBUG
 // Setup the FONA MQTT class by passing in the FONA class and MQTT server and login details.
-Adafruit_MQTT_FONA mqtt(&fona, AIO_SERVER, AIO_SERVERPORT,AIO_USERNAME,AIO_PASSWORD);
-
+//Adafruit_MQTT_FONA mqtt(&fona, AIO_SERVER, AIO_SERVERPORT,AIO_USERNAME,AIO_PASSWORD);
+Adafruit_MQTT_FONA mqtt(&fona, AIO_SERVER, AIO_SERVERPORT);
 // You don't need to change anything below this line!
 #define halt(s) { Serial.println(F( s )); while(1);  }
 
@@ -119,6 +124,9 @@ void setup() {
 void loop() {
   //Serial.println(freeMemory());
   prepareData();
+      if ( mqtt.ping()) {
+      Serial.println(F("MQTT server avaliable"));
+      }
   // Make sure to reset watchdog every loop iteration!
   ////Watchdog.reset();
 
@@ -142,7 +150,7 @@ if (readytosend != 0) {
        //Serial.println(freeMemory());
       txfailures = 0;
 	  readytosend = 0;
-    //delete[] geodata;
+    delete[] geodata;
     }
 } else {
 	
@@ -163,19 +171,36 @@ void MQTT_connect() {
 
   // Stop if already connected.
   if (mqtt.connected()) {
-    return;
-  }
-
-  Serial.print(F("Connecting to MQTT... "));
-
-  while ((ret = mqtt.connect()) != 0 ) { // connect will return 0 for connected
-    delay(500);
-    //Serial.println(mqtt.connectErrorString(ret));
+    if (! mqtt.ping()) {
     mqtt.disconnect();
-    Serial.println(F("Retrying MQTT connection in 1 seconds..."));
-    //mqtt.connect();
-    delay(1000);  // wait 5 seconds
+    } else {
+    return;
+    }
   }
+
+  Serial.println(F("Connecting to MQTT... "));
+       mqtt.connect();
+       delay(1000);
+        if (! mqtt.ping()) {
+        mqtt.disconnect();
+        Serial.println(F("No MQTT server avaliable"));
+        }else {
+        mqtt.disconnect();
+        Serial.println(F("MQTT server avaliable"));
+        } 
+      
+      while ((ret = mqtt.connect()) != 0 ) { // connect will return 0 for connected
+      //delay(1000);
+      //Serial.println(mqtt.connectErrorString(ret));
+     
+      mqtt.disconnect();
+     
+      Serial.println(F("Retrying MQTT connection in 2 seconds..."));
+      //mqtt.connect();
+      delay(2000);  // wait 5 seconds
+
+     }
+   
   Serial.println(F("MQTT Connected!"));
   //Watchdog.reset();
 }
@@ -204,11 +229,11 @@ void prepareData() {
     root.set("lat",(gps_data[0]),7);
     root.set("lon",(gps_data[1]),7);
     root.set("tid",TID);
-    root.set("vel",(int(gps_data[2]) <= 2 ? 0 : int(gps_data[2])));
+    root.set("vel",(int(gps_data[2]) <= SPEED_TR ? 0 : int(gps_data[2])));
     root.set("tst",uxdate);
     root.printTo(geodata, 122);
     //sprintf((gps_data[0]),%f, movement_W);
-	if ((((gps_data[0]) - lastmovement_W ) > 0.0010000) or (((gps_data[1]) - lastmovement_L ) > 0.0010000) or reporter == 100) {
+	if ((((gps_data[0]) - lastmovement_W ) > 0.0010000) or (((gps_data[1]) - lastmovement_L ) > 0.0010000) or reporter == HEARTBIT) {
 	reporter=0;
 	readytosend = 1;
   /*
@@ -245,7 +270,7 @@ void prepareData() {
   Serial.print(F("Longitude OLD: "));
   Serial.print(lastmovement_L,7);
   Serial.println();
-  Serial.print(F("Times checking, when 100 reporting heartbit now: "));
+  Serial.print(F("Times checking, HEARTBIT reporting heartbit now: "));
   Serial.println(reporter);
   Serial.println();
 
