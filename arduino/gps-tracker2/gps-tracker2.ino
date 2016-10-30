@@ -124,9 +124,7 @@ void setup() {
 void loop() {
   //Serial.println(freeMemory());
   prepareData();
-      if ( mqtt.ping()) {
-      Serial.println(F("MQTT server avaliable"));
-      }
+ 
   // Make sure to reset watchdog every loop iteration!
   ////Watchdog.reset();
 
@@ -141,6 +139,8 @@ if (readytosend != 0) {
     //Watchdog.reset();
     // Now we can publish stuff!
 
+
+   
     if (! feed.publish(geodata)) {
     
        Serial.println(F("Sent Failed"));
@@ -150,12 +150,20 @@ if (readytosend != 0) {
        //Serial.println(freeMemory());
       txfailures = 0;
 	  readytosend = 0;
-    delete[] geodata;
-    }
+    //delete[] geodata;
+
+   }
 } else {
-	
+
 	Serial.println(F("No movement of 10 meters waiting ..."));
 	readytosend = 0;
+      if (mqtt.ping()){
+      delay(500);
+      Serial.println(F("MQTT server avaliable"));
+      }else{
+      delay(500);
+      Serial.println(F("No MQTT server !!!"));  
+      }
 }
   //Watchdog.reset();
   delay(DELAY*1000);  // wait a few seconds to stabilize connection
@@ -171,26 +179,15 @@ void MQTT_connect() {
 
   // Stop if already connected.
   if (mqtt.connected()) {
-    if (! mqtt.ping()) {
-    mqtt.disconnect();
-    } else {
+    
     return;
-    }
+    
   }
 
   Serial.println(F("Connecting to MQTT... "));
-       mqtt.connect();
-       delay(1000);
-        if (! mqtt.ping()) {
-        mqtt.disconnect();
-        Serial.println(F("No MQTT server avaliable"));
-        }else {
-        mqtt.disconnect();
-        Serial.println(F("MQTT server avaliable"));
-        } 
       
       while ((ret = mqtt.connect()) != 0 ) { // connect will return 0 for connected
-      //delay(1000);
+      delay(200);
       //Serial.println(mqtt.connectErrorString(ret));
      
       mqtt.disconnect();
