@@ -1,13 +1,15 @@
+#include "config.h"
 #include <Adafruit_SleepyDog.h>
 #include <SoftwareSerial.h>
 #include "Adafruit_FONA.h"
-#include "config.h"
+
 
 #define halt(s) { Serial.println(F( s )); while(1);  }
 
-const char MQTT_GSM_APN[] PROGMEM = GSM_APN; 
+
 extern Adafruit_FONA fona;
 extern SoftwareSerial fonaSS;
+extern SoftwareSerial *fonaSerial;
 
 
 
@@ -23,11 +25,11 @@ uint8_t sendATcommand(char* ATcommand,unsigned int *timeout){
     char response[30];
     unsigned long previous;
 
-    while( fonaSS.available() > 0) fonaSS.read();    // Clean the input buffer
+    while( fonaSerial->available() > 0) fonaSerial->read();    // Clean the input buffer
     fonaSS.flush();
     if (ATcommand[0] != '\0')
     {
-        fonaSS.println(ATcommand);    // Send the AT command 
+        fonaSerial->println(ATcommand);    // Send the AT command 
         delay(20);
     }
 
@@ -41,8 +43,8 @@ uint8_t sendATcommand(char* ATcommand,unsigned int *timeout){
     Serial.print(F("Result: "));
     // this loop waits for the answer
     do{
-        if(fonaSS.available() > 0){    // if there are data in the UART input buffer, reads it and checks for the asnwer
-            response[x] = fonaSS.read();
+        if(fonaSerial->available() > 0){    // if there are data in the UART input buffer, reads it and checks for the asnwer
+            response[x] = fonaSerial->read();
             
             Serial.print(response[x]);
             //delay(20);
@@ -62,11 +64,13 @@ uint8_t sendATcommand(char* ATcommand,unsigned int *timeout){
 
 boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *username, const __FlashStringHelper *password) {
   //Watchdog.reset();
-  fonaSS.begin(9600);
-  if (! fona.begin(fonaSS)) {           // can also try fona.begin(Serial1) 
+  fonaSerial->begin(9600);
+  if (! fona.begin(*fonaSerial)) {           // can also try fona.begin(Serial1) 
     Serial.println(F("Couldn't find FONA"));
     return false;
   } else {
+  //fona.deleteSMS(1);
+  
   //Serial.print(F("Check FONA err: - expect OK"));
  //set additionalcommands to modem  
  //   sendATcommand("AT+CMEE=2", 200);
@@ -88,12 +92,12 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
    // reset to default
    //"ATZ0";
    //"AT&W";
-
+   //delay(1000);
   }
   
   while (! fona.getNetworkStatus()) {
    Serial.println(F("Waiting for network..."));
-    //dey(500);
+    delay(1000);
     /*   
         uint8_t n = fona.getRSSI();
         int8_t r;
@@ -107,25 +111,28 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
         }
    Serial.print(r); Serial.println(F(" dBm"));
    
-   delay(2000);
+   
    */
            
    //Watchdog.reset();
   }
 
   //Watchdog.reset();
-  delay(5000);  // wait a few seconds to stabilize connection
+  delay(7000);  // wait a few seconds to stabilize connection
   //Watchdog.reset();
   fona.setGPRSNetworkSettings(apn, username, password);
+  delay(20);
   //Serial.println(F("Disabling GPRS"));
   fona.enableGPRS(false);
   //Watchdog.reset();
-  //delay(5000);  // wait a few seconds to stabilize connection
+  delay(10000);  // wait a few seconds to stabilize connection
   //Watchdog.reset();
 
   Serial.println(F("Enabling GPRS"));
-  if (!fona.enableGPRS(true)) {
+  while (!fona.enableGPRS(true)) {
+    delay(10000);
     Serial.println(F("Failed to turn GPRS on"));  
+    
     return false;
   }
 
@@ -159,7 +166,7 @@ boolean GPS() {
     Serial.println(F("Not fixed!"));
 
     return false;
-    delay(1000);
+    //delay(5000);
   }
   if (stat >= 2) {
     Serial.println(F("GPS Fixed"));
@@ -170,13 +177,32 @@ boolean GPS() {
 
 void GPS_Data(float *fdata, int *idata) {
   char utime[14];
+  int YY;
+  int MM;
+  int DD;
+  int hh;
+  int mm;
+  int ss;
   //float latitude, longitude, speed_kph, heading, altitude;
   boolean gps_success = fona.getGPS(&fdata[0], &fdata[1], &fdata[3], &fdata[2], &fdata[4], &utime[0]);
-  sscanf(utime,"%04d%02d%02d%02d%02d%02d",&idata[5],&idata[4],&idata[3],&idata[0],&idata[1],&idata[2]);
+  delay(20);
+  sscanf(utime,"%04d%02d%02d%02d%02d%02d",&YY,&MM,&DD,&hh,&mm,&ss);
+  delay(20);
+  idata[0] = hh;
+  idata[1] = mm;
+  idata[2] = ss;
+  idata[3] = DD;
+  idata[4] = MM;
+  idata[5] = YY;
 
+  delay(20);
+    
   if (&gps_success) {
-    //delete utime;
+    
     return &fdata;
     
   }
 }
+
+
+
