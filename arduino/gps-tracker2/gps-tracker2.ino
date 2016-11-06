@@ -1,3 +1,4 @@
+
 /***************************************************
   Adafruit MQTT Library FONA Example
 
@@ -23,15 +24,22 @@
    reconnect GPRS
 */
 
+//#include <avr/pgmspace.h>
+
+//#include <Adafruit_SleepyDog.h>
 #include "config.h"
 #include <TimeLib.h>
-#include <Adafruit_SleepyDog.h>
 #include <SoftwareSerial.h>
 #include "Adafruit_FONA.h"
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_FONA.h"
+//#include "SoftReset.h"
 #include <ArduinoJson.h>
-#include <MemoryFree.h>
+//#include <MemoryFree.h>
+
+//#include <avr/power.h>
+//#include <avr/wdt.h>
+
 
 /*************************** FONA Pins ***********************************/
 
@@ -40,15 +48,18 @@
 #define GSM_TX  3
 #define GSM_RST 4 // pin number 16 in sim808 throug diode to ground https://cdn-shop.adafruit.com/datasheets/SIM808_Hardware+Design_V1.00.pdf max 4.3 V
 SoftwareSerial fonaSS = SoftwareSerial(GSM_TX, GSM_RX);
+SoftwareSerial *fonaSerial = &fonaSS;
+
 
 Adafruit_FONA fona = Adafruit_FONA(GSM_RST);
+//Adafruit_FONA fona = Adafruit_FONA();
 //delay(200);
 StaticJsonBuffer<122> jsonBuffer;
 
 // global - a tak nie powinno się robić
 JsonObject& root = jsonBuffer.createObject();
 
-        // current state LDR
+
 float lastmovement_W = 0;
 float lastmovement_L = 0;
 uint8_t readytosend;
@@ -57,16 +68,18 @@ uint16_t reporter;
 char geodata[122];
 
 /************ Global State (you don't need to change this!) ******************/
-const char MQTT_SERVER[] PROGMEM    = AIO_SERVER;
-//const char MQTT_USERNAME[] PROGMEM  = AIO_USERNAME;
-//const char MQTT_PASSWORD[] PROGMEM  = AIO_PASSWORD;
-const char MQTT_TOPIC[] PROGMEM = TOPIC;  
-
-
+//const char MQTT_SERVER[] PROGMEM = AIO_SERVER;
+//const char MQTT_USERNAME[] PROGMEM = AIO_USERNAME;
+//const char MQTT_PASSWORD[] PROGMEM = AIO_PASSWORD;
+//const char MQTT_TOPIC[] PROGMEM = TOPIC; 
+//const char PHONE_GSM_APN[] PROGMEM = GSM_APN;  
+#define MQTT_CONN_KEEPALIVE 1800
+#define MQTT_FONA_QUERYDELAY DELAY
+ 
 //#define MQTT_DEBUG
 // Setup the FONA MQTT class by passing in the FONA class and MQTT server and login details.
-//Adafruit_MQTT_FONA mqtt(&fona, AIO_SERVER, AIO_SERVERPORT,AIO_USERNAME,AIO_PASSWORD);
-Adafruit_MQTT_FONA mqtt(&fona, AIO_SERVER, AIO_SERVERPORT);
+Adafruit_MQTT_FONA mqtt(&fona,AIO_SERVER,AIO_SERVERPORT,AIO_USERNAME,AIO_PASSWORD);
+//Adafruit_MQTT_FONA mqtt(&fona,AIO_SERVER,AIO_SERVERPORT);
 // You don't need to change anything below this line!
 #define halt(s) { Serial.println(F( s )); while(1);  }
 
@@ -79,7 +92,7 @@ boolean GPS();
 /****************************** Feeds ***************************************/
 
 // Setup a feed called 'photocell' for publishing.
-Adafruit_MQTT_Publish feed = Adafruit_MQTT_Publish(&mqtt, TOPIC);
+Adafruit_MQTT_Publish feed = Adafruit_MQTT_Publish(&mqtt,TOPIC);
 // Adjust as necessary, in seconds.  Default to 5 minutes.
 
 /*************************** Sketch Code ************************************/
@@ -87,9 +100,11 @@ Adafruit_MQTT_Publish feed = Adafruit_MQTT_Publish(&mqtt, TOPIC);
 // How many transmission failures in a row we're willing to be ok with before reset
 byte txfailures = 0;
 #define MAXTXFAILURES 3
+//void MQTT_connect();
 
 void setup() {
-  
+
+
   //while (!fonaSS);
 
   // Watchdog is optional!
@@ -102,29 +117,65 @@ void setup() {
   //Watchdog.reset();
   delay(5000);  // wait a few seconds to stabilize connection
   //Watchdog.reset();
-
+ 
   // Initialise the FONA module
   while (! FONAconnect(F(GSM_APN), F(GSM_USERNAME), F(GSM_PASSWORD))) {
 
-    Serial.println(F("Retrying FONA GSM"));
+    Serial.println(F("Retrying FONA GSM - GPRS"));
+    delay(10000);
   }
-  while (! GPS()) {
+     while (! GPS()) {
     Serial.println(F("Retrying FONA GPS"));
+    delay(5000);
     //Watchdog.reset();
   }
   Serial.println(F("Connected to Cellular!"));
 
   //Watchdog.reset();
-  delay(5000);  // wait a few seconds to stabilize connection
+  delay(10000);  // wait a few seconds to stabilize connection
   //Watchdog.reset();
   
 }
 
 
 void loop() {
+  fona.flush();
+    delay(50);   
   //Serial.println(freeMemory());
   prepareData();
- 
+
+    delay(50);
+
+    if ( fona.getNetworkStatus() ){
+    //TCPavailable fona.getNetworkStatus()  fona.TCPconnected()
+    Serial.println(F("Network avaliable !"));
+    
+    delay(50);
+    mqtt.ping();
+    delay(50);
+   } else {
+    Serial.println(F("No network !"));
+    
+    fona.enableGPRS(false);
+    delay(7000);  // wait a few seconds to stabilize connection
+    Serial.println(F("Enabling GPRS again !"));
+      while (!fona.enableGPRS(true)) {
+      delay(7000);
+      Serial.println(F("Failed to turn GPRS on"));  
+    
+      }
+
+      while (! GPS()) {
+      Serial.println(F("Restarting FONA GPS - not fixed"));
+      delay(5000);
+      }
+      
+    Serial.println(F("Retrying FONA GPRS/GPS after crash !"));
+    delay(10000);
+    Serial.println(F("Connected to Cellular again !"));
+   }
+   
+   //delay(500);
   // Make sure to reset watchdog every loop iteration!
   ////Watchdog.reset();
 
@@ -134,8 +185,11 @@ void loop() {
   
 if (readytosend != 0) {
   
+    
+    
+    delay(50);
     MQTT_connect();
-
+    delay(50);
     //Watchdog.reset();
     // Now we can publish stuff!
 
@@ -148,22 +202,28 @@ if (readytosend != 0) {
     } else {
        Serial.println(F("Sent OK!"));
        //Serial.println(freeMemory());
+       //delay(500);
+       //feed.publish(geodata);
       txfailures = 0;
 	  readytosend = 0;
     //delete[] geodata;
+    
 
    }
 } else {
 
 	Serial.println(F("No movement of 10 meters waiting ..."));
+  delay(10);
 	readytosend = 0;
-      if (mqtt.ping()){
-      delay(500);
+      
+      /*if (mqtt.ping()){
+      delay(1000);
       Serial.println(F("MQTT server avaliable"));
       }else{
       delay(500);
       Serial.println(F("No MQTT server !!!"));  
       }
+      */
 }
   //Watchdog.reset();
   delay(DELAY*1000);  // wait a few seconds to stabilize connection
@@ -187,7 +247,7 @@ void MQTT_connect() {
   Serial.println(F("Connecting to MQTT... "));
       
       while ((ret = mqtt.connect()) != 0 ) { // connect will return 0 for connected
-      delay(200);
+      delay(100);
       //Serial.println(mqtt.connectErrorString(ret));
      
       mqtt.disconnect();
@@ -204,16 +264,21 @@ void MQTT_connect() {
 
 
 void prepareData() {
-  
+  int vbat;
   int ctime[6];
   float gps_data[5];
+  if (! fona.getBattVoltage(&vbat)) vbat = 0;
+  delay(100);
   void GPS_Data(float *fdata, int *idata);
   GPS_Data(&gps_data[0], &ctime[0]);
+  delay(100);
   setTime(ctime[0], ctime[1], ctime[2], ctime[3], ctime[4], ctime[5]);
+  delay(100);
   time_t uxdate = now();
-  int vbat;
+ 
   //if (! fona.getBattPercent(&vbat)) vbat = 0;
-  if (! fona.getBattVoltage(&vbat)) vbat = 0;
+
+
   //}
   // {"tst":1476474031,"acc":1000,"_type":"location","alt":140,"lon":-90.48259734672334,"vac":10,"p":100.160530090332,"lat":38.75410327670748,"batt":100,"tid":"JT"}
   // Owntracks API: 
@@ -228,12 +293,41 @@ void prepareData() {
     root.set("tid",TID);
     root.set("vel",(int(gps_data[2]) <= SPEED_TR ? 0 : int(gps_data[2])));
     root.set("tst",uxdate);
+    delay(50);
     root.printTo(geodata, 122);
+    delay(100);
     //sprintf((gps_data[0]),%f, movement_W);
-	if ((((gps_data[0]) - lastmovement_W ) > 0.0010000) or (((gps_data[1]) - lastmovement_L ) > 0.0010000) or reporter == HEARTBIT) {
+	if ((((gps_data[0]) - lastmovement_W ) > float(0.0010000)) or (((gps_data[1]) - lastmovement_L ) > float(0.0010000)) or reporter == HEARTBIT) {
 	reporter=0;
 	readytosend = 1;
+/*
+byte stat = fona.GPSstatus();
+  
+  if (stat < 0 or stat == 0  or stat == 1) {
+    
+    Serial.println(F("Not fixed!"));
+
+   if (fona.getNetworkStatus() == 1) {
+      
+      float lat,lon;
+      boolean gsmloc_success = fona.getGSMLoc(&lat, &lon);
+
+    if (gsmloc_success) {
+      Serial.print("GSMLoc lat:");
+      Serial.println(lat, 6);
+      Serial.print("GSMLoc long:");
+      Serial.println(lon, 6);
+    }
+  }
+
+
+   delay(500);
+  }
+*/
+
+
   /*
+  
   Serial.println();
   Serial.print(F("Latitude OLD: "));
   Serial.print(lastmovement_W,7);
@@ -242,8 +336,12 @@ void prepareData() {
   Serial.print(lastmovement_L,7);
   Serial.println();
   */
-	lastmovement_W = (gps_data[0]);
-	lastmovement_L = (gps_data[1]);
+
+  lastmovement_W = (gps_data[0]);
+  delay(10);
+  lastmovement_L = (gps_data[1]);
+  delay(10);
+
   /*Serial.println();
   Serial.println(F("Latitude: "));
   Serial.print(lastmovement_W,7);
@@ -267,11 +365,18 @@ void prepareData() {
   Serial.print(F("Longitude OLD: "));
   Serial.print(lastmovement_L,7);
   Serial.println();
-  Serial.print(F("Times checking, HEARTBIT reporting heartbit now: "));
+  Serial.print(F("Times checking: "));
+  Serial.print(HEARTBIT);
+  Serial.print(F(" before reporting, heartbit now waiting: "));
   Serial.println(reporter);
   Serial.println();
-
-  
-}
+  //Serial.print(F("GPS status: "));
+  //Serial.println(fona.GPSstatus());
   //void sendATcommand(char *ATcommand, unsigned int *timeout);
+  //sendATcommand("AT+CGPSSTATUS?",500);
+   
+}
+
+
+
 
