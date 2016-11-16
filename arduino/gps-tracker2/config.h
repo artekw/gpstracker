@@ -29,5 +29,6 @@
 #define TOPIC "owntracks/piesek/yasmina"
 #define TID "yb" // "tracker-ID which is used by the auto-faces feature to display, say, initials of a user."
 #define SPEED_TR 3  // bellow that number = 0
-#define HEARTBIT 120 // there ic multiply by DELAY and sending heartbit - set for every 30 min when movement trying is 5 sec.
-#define DELAY 13 // seconds +2
+#define SPEED_TR 3  // bellow that number = 0
+#define HEARTBIT 90 // there ic multiply by DELAY and sending heartbit - set for every 30 min when movement trying is 5 sec.
+#define DELAY 13 // seconds + ~6 
