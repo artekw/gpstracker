@@ -27,13 +27,13 @@
 #include "Adafruit_MQTT_FONA.h"
 #include "ArduinoJson.h"
 #include <SoftwareSerial.h>
+/*************************** FONA Params ***********************************/
 #define FONA_DEFAULT_TIMEOUT_MS 750
 #define MQTT_CONN_KEEPALIVE 1800
 #define MQTT_FONA_INTERAVAILDELAY 200
 #define MQTT_FONA_QUERYDELAY 750
 /*************************** FONA Pins ***********************************/
 
-// GSm pins
 #define GSM_RX  2
 #define GSM_TX  3
 #define GSM_RST 4 // pin number 16 in sim808 throug diode to ground https://cdn-shop.adafruit.com/datasheets/SIM808_Hardware+Design_V1.00.pdf max 4.3 V
@@ -48,14 +48,8 @@ uint16_t reporter = 0;
 uint32_t logCounter = 0; 
 char geodata[125];
 
-//char *geodatapoint = geodata;
-/************ Global State (you don't need to change this!) ******************/
-//const char MQTT_SERVER[] PROGMEM = AIO_SERVER;
-//const char MQTT_USERNAME[] PROGMEM = AIO_USERNAME;
-//const char MQTT_PASSWORD[] PROGMEM = AIO_PASSWORD;
-//const char MQTT_TOPIC[] PROGMEM = TOPIC; 
-//const char PHONE_GSM_APN[] PROGMEM = GSM_APN;  
 
+/************ Global State (you don't need to change this!) ******************/
  
 //#define MQTT_DEBUG
 // Setup the FONA MQTT class by passing in the FONA class and MQTT server and login details.
@@ -73,7 +67,7 @@ void(* resetFunc) (void) = 0;
 
 // Setup a feed called 'photocell' for publishing.
 Adafruit_MQTT_Publish feed = Adafruit_MQTT_Publish(&mqtt,TOPIC);
-// Adjust as necessary, in seconds.  Default to 5 minutes.
+
 
 
 /*************************** Sketch Code ************************************/
@@ -88,7 +82,11 @@ void setup() {
   while (!fonaSS);
   delay(20);
   fona.begin(fonaSS);
-  
+  delay(500);
+  while (!fonaSS);
+  clearbuffer();
+  while (!Serial);
+
   Serial.println(F("GPS Tracker starting ..."));
   
   delay(20000);  // wait a few seconds to stabilize connection
@@ -105,14 +103,15 @@ void setup() {
     delay(10000); 
     while ( !fonaSS);
     byte trying =0;
-    while (! GPS() or trying == 10) {
+    while (! GPS() ) {
     Serial.println(F("Retrying FONA GPS ..."));
     //Serial.println(trying);
     delay(15000);
     while ( !fonaSS);
     trying++;
+    if (trying == 15)resetFunc();
    }
-  if (trying == 10)resetFunc();
+
   Serial.println(F("Connected to Cellular!"));
 
 
@@ -172,7 +171,6 @@ if (readytosend == 1) {
        check = 3;
        readytosend = 0;
 
-    //delete[] geodata;
     }
   } while (check < 3);
 
@@ -190,7 +188,7 @@ if (readytosend == 1) {
       delay(100); 
           while (!fonaSS);
           if (!fona.TCPconnected()){
-              return;
+              break;
            }   
       /*if (mqtt.ping()){
       delay(1000);
@@ -214,7 +212,7 @@ if (readytosend == 1) {
    Serial.println(F("No GPS fixed or GPRS connected, waiting for restart ..."));
    delay(1000);
     while ( !fonaSS);
-    if( fona.GPRSstate() != 1 or fona.getRSSI() < 6){
+    if( fona.GPRSstate() != 1 ){
            Serial.println(F("No network !!! traing to bring up ..."));
            delay(50);
           //asm volatile ( "jmp 0"); 
@@ -226,26 +224,21 @@ if (readytosend == 1) {
       while (!fonaSS);
       if (fona.GPSstatus() <= 1){
         Serial.println(F("Restarting FONA GPS - not fixed ..."));
-        delay(50);
+         delay(50);
          byte retry=0;
-         while (! GPS() or retry == 10) {
+         while (! GPS() ) {
            Serial.println(F("Trying up FONA GPS ..."));
-           delay(10000);
+           delay(15000);
            while (!fonaSS);
            retry++;
-        }
-
-        delay(5000);
-        while (!fonaSS);
-        if (fona.GPSstatus() <= 1) {
-          fonaSS.end();
-          resetFunc();//asm volatile ( "jmp 0"); 
-        }
-        
+            if (retry == 10) {
+             fonaSS.end();
+             resetFunc();//asm volatile ( "jmp 0"); 
+            }
+         }
       }
    
-  //OCR0A = 0xAF;
-  //TIMSK0 |= _BV(OCIE0A);
+
 }
 
 
@@ -280,6 +273,7 @@ void MQTT_connect() {
   Serial.println(F("Connecting to MQTT ... "));
       delay(50);
       while (!fonaSS);
+      byte test=0;
       while ((ret = mqtt.connect()) != 0 ) { // connect will return 0 for connected
       delay(50);
       //Serial.println(mqtt.connectErrorString(ret));
@@ -291,6 +285,12 @@ void MQTT_connect() {
       //mqtt.connect();
       delay(2000);  // wait 5 seconds
       while (!fonaSS);
+      test ++;
+            if (test == 20) {
+             fonaSS.end();
+             resetFunc();//asm volatile ( "jmp 0"); 
+            }
+      
      }
   // Configure timer0 compare interrupt to run and decrease the log counter every millisecond.
 
@@ -351,7 +351,7 @@ void prepareData() {
     delay(50);
     root.printTo(geodata, 125);
     delay(50);
-    //delete[] &jsonBuffer,&uxdate,&vbat,root,&ctime;
+    //delete[] &jsonBuffer;
     //sprintf((gps_data[0]),%f, movement_W);
   if ((((gps_data[0]) - lastmovement_W ) > float(0.0010000)) or (((gps_data[1]) - lastmovement_L ) > float(0.0010000)) or reporter == HEARTBIT) {
   reporter=0;
@@ -405,7 +405,7 @@ void prepareData() {
   Serial.print(F("   Times checking: "));
   delay(50);
   Serial.print(HEARTBIT);
-  Serial.print(F(" before reporting heartbit, waiting: "));
+  Serial.print(F(" before reporting heartbit, now is: "));
   delay(50);
   Serial.println(reporter);
   Serial.println();
