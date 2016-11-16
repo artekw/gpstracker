@@ -14,54 +14,6 @@ extern SoftwareSerial fonaSS;
 byte gps_enabled = 0;
 
 
-//send AT command and wait for responce and print
-/*
-
-uint8_t sendATcommand(char* ATcommand,unsigned int *timeout){
-    
-    uint8_t x=0,  answer=0;
-    char response[20];
-    unsigned long previous;
-
-    while( fonaSS.available() > 0) fonaSS.read();    // Clean the input buffer
-    fonaSS.flush();
-    if (ATcommand[0] != '\0')
-    {
-        fonaSS.println(ATcommand);    // Send the AT command 
-        delay(20);
-    }
-
-
-    x = 0;
-    previous = millis();
-    Serial.println();
-    Serial.print(F("Execute AT command: "));
-    delay(50);
-    Serial.println(ATcommand);
-
-    Serial.print(F("Result: "));
-    delay(50);
-    // this loop waits for the answer
-    do{
-        if(fonaSS.available() > 0){    // if there are data in the UART input buffer, reads it and checks for the asnwer
-            response[x] = fonaSS.read();
-            
-            Serial.print(response[x]);
-            //delay(20);
-            x++;
-            answer = 1;
-          } else {
-            answer = 0;
-         }
-    }while(((millis() - previous) < &timeout));    // Waits for the asnwer with time out
-    //delete buffer - freeup memory
-    delete[] response,previous,timeout;
-    return answer;
-
-}
-
-*/
-
 boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *username, const __FlashStringHelper *password) {
  
 
@@ -76,8 +28,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
     return false;
   } else {
 
-  
-    
+  // to test   
   }
   
   while (!fonaSS);
@@ -159,21 +110,23 @@ return false;
 void GPS_Data(float *fdata, int *idata) {
   
     while ( !fonaSS);
-    while (fona.GPSstatus() < 2) {
-      fona.enableGPS(false);
-      delay(1000);
-      while ( !fonaSS);
-      fona.enableGPS(true);
-      delay(10000);
-      byte checking=0;
-      do{
-        Serial.println(F("Not fixed!"));
-        delay(2000);
-        checking++;
+    delay(100);
+    if (fona.GPSstatus() < 2) {
+        byte retry = 0;
+        while (! GPS()) {
+        Serial.println(F("Retrying FONA GPS ..."));
+        delay(15000);
         while ( !fonaSS);
-      } while (fona.GPSstatus() < 2 or checking == 10);
-      
-   }
+        retry++;
+           if (retry == 10) {
+               fonaSS.end();
+               asm volatile ( "jmp 0");
+           }
+       
+     }
+    
+       
+  } 
   
   char utime[14];
   //int YY;
