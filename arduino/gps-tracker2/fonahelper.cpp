@@ -1,7 +1,17 @@
-#include "config.h"
+include "config.h"
 #include "Adafruit_FONA.h"
 #include <SoftwareSerial.h>
-#define FONA_DEFAULT_TIMEOUT_MS 750
+
+
+/*
+//prog mem helper - change buffer size for topic if needed 
+const char stringBuffer[30];
+const char* getString(const char* str[30]) {
+strcpy_P(stringBuffer, (const char*)str);
+delay(50);
+return stringBuffer;
+}
+*/
 
 
 extern Adafruit_FONA fona;
@@ -18,13 +28,16 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
  
 
     while (!fonaSS);
-    fonaSS.begin(4800);
-    delay(20);
+    fonaSS.begin(9800);
+    delay(50);
 
  
   if (! fona.begin(fonaSS)) {           // can also try fona.begin(Serial1) 
+    delay(50);
+#ifdef DEBUG
     Serial.println(F("Couldn't find FONA"));
     delay(50);
+#endif
     return false;
   } else {
 
@@ -36,8 +49,11 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
 
   byte net =0;
   while (fona.getNetworkStatus() != 1) {
+   delay(500);
+#ifdef DEBUG
    Serial.println(F("Waiting for network ..."));
-   delay(20000);
+#endif
+   delay(15000);
    while ( !fonaSS);
    net++;
    if (net == 20) {
@@ -47,20 +63,26 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
   }
 
 
-  delay(20000);  // wait a few seconds to stabilize connection
-  while (!fonaSS);
+  //delay(20000);  // wait a few seconds to stabilize connection
+  
   fona.setGPRSNetworkSettings(apn, username, password);
   //Serial.println(F("Disabling GPRS"));
+  while (!fonaSS);
   fona.enableGPRS(false);
-  delay(2000);  // wait a few seconds to stabilize connection
+  delay(500);  // wait a few seconds to stabilize connection
+#ifdef DEBUG
   Serial.println(F("Enabling GPRS"));
+  delay(50);
+#endif
   while (!fonaSS);
   if (!fona.enableGPRS(true)) {
+#ifdef DEBUG
     Serial.println(F("Failed to turn GPRS on")); 
     delay(50); 
+#endif
     return false;
   }
-
+  while (!fonaSS);
   fona.enableRTC(1);
   
   return true;
@@ -69,35 +91,42 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
 boolean GPS() {
   
   if (gps_enabled == 0 ) {
+#ifdef DEBUG
     Serial.println(F("Enabling GPS"));
     delay(50);
+#endif
     while ( !fonaSS);
     fona.enableGPS(false);
-    delay(2000);
+    delay(500);
     while ( !fonaSS);
     if(!fona.enableGPS(true)) {
+#ifdef DEBUG
       Serial.println(F("Failed to turn GPS on"));
-      delay(50);  
+      delay(50);
+#endif  
       return false;
     } else {
       gps_enabled = 1;
-      delay(20000);
+      delay(10000);
     }
   }
   byte stat;
   while ( !fonaSS);
   stat = fona.GPSstatus();
-  delay(1000);
+  delay(500);
   if (stat < 0 or stat == 0  or stat == 1) {
-    
+#ifdef DEBUG    
     Serial.println(F("Not fixed!"));
     delay(50);
+#endif
     return false;
-    //delay(5000);
+
    }
    if (stat >= 2) {
+#ifdef DEBUG
     Serial.println(F("GPS Fixed"));
     delay(50);
+#endif
     return true;
    } else {
     return false;
@@ -109,25 +138,6 @@ return false;
 
 void GPS_Data(float *fdata, int *idata) {
   
-    while ( !fonaSS);
-    delay(100);
-    if (fona.GPSstatus() < 2) {
-        byte retry = 0;
-        while (! GPS()) {
-        Serial.println(F("Retrying FONA GPS ..."));
-        delay(15000);
-        while ( !fonaSS);
-        retry++;
-           if (retry == 10) {
-               fonaSS.end();
-               asm volatile ( "jmp 0");
-           }
-       
-     }
-    
-       
-  } 
-  
   char utime[14];
   //int YY;
   //int MM;
@@ -138,6 +148,7 @@ void GPS_Data(float *fdata, int *idata) {
   float latitude, longitude, speed_kph,cog;
   //, speed_kph, heading, altitude;
   //boolean gps_success = fona.getGPS(&fdata[0], &fdata[1], &fdata[3], &fdata[2], &fdata[4], &utime[0]);
+  while (!fonaSS);
   boolean gps_success = fona.getGPS(&latitude,&longitude, &fdata[3], &speed_kph, &cog, &utime[0]);
   delay(50);
   //sscanf(utime,"%04d%02d%02d%02d%02d%02d",&YY,&MM,&DD,&hh,&mm,&ss);
