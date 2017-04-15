@@ -41,8 +41,8 @@
 
 /***************************LED*******************************************/
 
-byte ledState = 0;             // ledState used to set the LED
-long previousMillis = 0;        // will store last time LED was updated
+//byte ledState = 0;             // ledState used to set the LED
+//long previousMillis = 0;        // will store last time LED was updated
  
 
 /*************************** FONA Pins ***********************************/
