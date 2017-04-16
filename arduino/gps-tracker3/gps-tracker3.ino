@@ -1,4 +1,5 @@
 
+
 /***************************************************
   Adafruit MQTT Library FONA Example
 
@@ -50,6 +51,8 @@
 #define GSM_RX  2
 #define GSM_TX  3
 #define GSM_RST 4 // pin number 16 in sim808 throug diode to ground https://cdn-shop.adafruit.com/datasheets/SIM808_Hardware+Design_V1.00.pdf max 4.3 V
+#define GSM_POWER 5
+#define GSM_CHARGE 6
 SoftwareSerial fonaSS = SoftwareSerial(GSM_TX, GSM_RX);
 //oftwareSerial *fonaSerial = &fonaSS;
 
@@ -86,14 +89,29 @@ Adafruit_MQTT_Publish feed = Adafruit_MQTT_Publish(&mqtt,TOPIC);
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(GSM_POWER, OUTPUT);
+  pinMode(GSM_CHARGE, INPUT);
+
   Serial.begin(57600);
+  digitalWrite(GSM_POWER,LOW);
+  delay(3000);
+  //digitalWrite(GSM_POWER,HIGH);
+  //delay(100);
+  //digitalWrite(GSM_POWER,LOW);
+//charge check
+
+
   while (!Serial);
-  fonaSS.begin(9600);
+  fonaSS.begin(4800);
+  delay(50);
   while (!fonaSS);
   //delay(20);
   //fonaSS.println("ATZ");
   fona.begin(fonaSS);
   delay(100);
+
+  charge();
+  
   fona.enableRTC(1);
   //while (!fonaSS);
   //fonaSS.println("AT&F1");
@@ -110,7 +128,7 @@ void setup() {
   digitalWrite(LED_BUILTIN, 1);   // turn the LED on (HIGH is the voltage level)
   delay(100);               // wait for a second
   digitalWrite(LED_BUILTIN, 0);    // turn the LED off by making the voltage LOW
-  delay(100); 
+  delay(80); 
   }
 #ifdef DEBUG
   Serial.println(F("GPS Tracker starting ..."));
@@ -119,7 +137,7 @@ void setup() {
   Serial.println(F("Debug is off"));
 #endif
 
-  delay(8000);  // wait a few seconds to stabilize connection
+  delay(15000);  // wait a few seconds to stabilize connection
 
   while ( !fonaSS);
   // Initialise the FONA module
@@ -131,7 +149,7 @@ void setup() {
     while ( !fonaSS);
 }
 
-    delay(10000); 
+    delay(15000); 
     while ( !fonaSS);
     byte trying =0;
     while (! GPS() ) {
@@ -162,12 +180,17 @@ void loop() {
 //charge needed    
 if ( vbat < 3510) {
     digitalWrite(LED_BUILTIN, 1);
+    Serial.println(F("LOW VOLTAGE ! charge it !!!"));
   } else { 
 
    digitalWrite(LED_BUILTIN, 0);
-
+   
   }
- 
+//charge check
+charge();
+
+
+
 //-------------main function not generate when no GPS, GPRS, GSM
 
 do{
@@ -175,7 +198,7 @@ do{
    delay(DELAY*1000);  // wait a few seconds to stabilize connection
    while (!fonaSS);
    fona.deleteSMS(1);
-   delay(500);
+   delay(1000);
 #ifdef DEBUG
    Serial.println(F("Network avaliable GPS fixed GPRS connected, processing ..."));
    delay(50);
@@ -234,7 +257,7 @@ if (readytosend == 1) {
       
       while ( !fonaSS);
       mqtt.ping(3);
-      delay(50); 
+      delay(100); 
           while (!fonaSS);
           if (!fona.TCPconnected()){
               return;
@@ -248,7 +271,7 @@ if (readytosend == 1) {
   
 
     while ( !fonaSS);
-    } while(fonaSS && fona.GPRSstate() == 1  && fona.GPSstatus() > 1  );
+    } while(fona.GPRSstate() == 1  && fona.GPSstatus() > 1  );
 #ifdef DEBUG
    Serial.println(F("No GPS fixed or GPRS connected, waiting for restart ..."));
 #endif
@@ -545,30 +568,27 @@ float distanceCoordinates(float flat1, float flon1, float flat2, float flon2) {
 
 //BLINK
 
-/*
-void blink(){
-long interval = 1000;
 
-unsigned long currentMillis = millis();
-  //int vbat;
-  //fona.getBattVoltage(vbat);
-  //if ( vbat <= 3520) {
-   if(currentMillis - previousMillis > interval) {
-    // save the last time you blinked the LED 
-    previousMillis = currentMillis;   
-
-    // if the LED is off turn it on and vice-versa:
-    if (ledState = 0)
-      ledState = 1;
-    else
-      ledState = 0;
-
-    // set the LED with the ledState of the variable:
-    digitalWrite(LED_BUILTIN, ledState);
-  }
-
- //} else { 
- // digitalWrite(LED_BUILTIN, 0);
-//}
+void charge(){
+  while ((digitalRead(GSM_CHARGE))) {
+    
+    digitalWrite(LED_BUILTIN, HIGH);
+    delay(2000);
+    digitalWrite(LED_BUILTIN, LOW);
+    delay(2000);
+    #ifdef DEBUG
+    Serial.println(F("Charging"));
+    
+    #endif
+    fona.enableGPRS(false);
+    delay(500);
+    fona.enableGPS(false);
+    delay(500);
+        
+  } 
+    fona.enableGPRS(true);
+    delay(500);
+    fona.enableGPS(true);
+    delay(500);
+    digitalWrite(LED_BUILTIN, 0); 
 }
-*/
