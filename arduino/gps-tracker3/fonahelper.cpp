@@ -1,7 +1,10 @@
+ 
 #include "config.h"
 #include "Adafruit_FONA.h"
 #include <SoftwareSerial.h>
 
+
+extern sleep(uint16_t count);
 
 /*
 //prog mem helper - change buffer size for topic if needed 
@@ -20,6 +23,7 @@ extern SoftwareSerial fonaSS;
 //extern SoftwareSerial *fonaSerial;
 
 
+
 // flags
 byte gps_enabled = 0;
 
@@ -28,7 +32,7 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
  
 
     while (!fonaSS);
-    fonaSS.begin(9800);
+    fonaSS.begin(4800);
     delay(50);
 
  
@@ -52,8 +56,11 @@ boolean FONAconnect(const __FlashStringHelper *apn, const __FlashStringHelper *u
    delay(500);
 #ifdef DEBUG
    Serial.println(F("Waiting for network ..."));
+   delay(50);
 #endif
-   delay(15000);
+   //delay(15000);
+   sleep(2);
+   delay(1000);
    while ( !fonaSS);
    net++;
    if (net == 20) {
@@ -107,7 +114,9 @@ boolean GPS() {
       return false;
     } else {
       gps_enabled = 1;
-      delay(10000);
+      //delay(10000);
+         sleep(2);
+         delay(1000);
     }
   }
   byte stat;
@@ -118,7 +127,10 @@ boolean GPS() {
 #ifdef DEBUG    
     Serial.println(F("Not fixed!"));
     delay(50);
+
 #endif
+    sleep(1);
+    //delay(2000);
     return false;
 
    }
@@ -161,7 +173,6 @@ void GPS_Data(float *fdata, int *idata) {
   //idata[4] = MM;
   //idata[5] = YY;
 
- 
     
   if (&gps_success) {
 

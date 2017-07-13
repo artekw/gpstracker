@@ -1,5 +1,4 @@
 
-
 /***************************************************
   Adafruit MQTT Library FONA Example
 
@@ -26,9 +25,10 @@
 #include "Adafruit_FONA.h"
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_FONA.h"
-#include "ArduinoJson.h"
+//#include "ArduinoJson.h"
+#include "ArduinoJson_32u4A7.h"
 #include <SoftwareSerial.h>
-
+#include "LowPower_32u4A7.h"
 /*************************** FONA Params ***********************************/
 
 //#undef FONA_DEFAULT_TIMEOUT_MS
@@ -59,11 +59,12 @@ SoftwareSerial fonaSS = SoftwareSerial(GSM_TX, GSM_RX);
 Adafruit_FONA fona = Adafruit_FONA(GSM_RST);
 
 
-int readytosend = 0;
-uint16_t reporter = 0;
-char geodata[125];
-int vbat;
-
+byte readytosend = 0;
+byte reporter = 0;
+static char geodata[126];
+volatile int vbat=4200;
+static float lastmovement_W = 0;
+static float lastmovement_L = 0;
 
 /************ Global State (you don't need to change this!) ******************/
 //const __FlashStringHelper *MQTT_TOPIC;
@@ -87,13 +88,20 @@ Adafruit_MQTT_Publish feed = Adafruit_MQTT_Publish(&mqtt,TOPIC);
 /*************************** Sketch Code ************************************/
 
 
+#define _HWB_H_13()  (PORTB |=  (1<<PB5))
+#define _HWB_L_13()  (PORTB &= ~(1<<PB5))
+#define _HWB_H_5()  (PORTD |=  (1<<PD5))
+#define _HWB_L_5()  (PORTD &= ~(1<<PD5))
+
 void setup() {
-  pinMode(LED_BUILTIN, OUTPUT);
-  pinMode(GSM_POWER, OUTPUT);
-  pinMode(GSM_CHARGE, INPUT);
+  
+  DDRB |= (1<<PB5); // pinMode(13,OUTPUT); //  DDRB |= (1<<PB5); //pinMode(LED_BUILTIN, OUTPUT);  //PB5
+  DDRD |= (1<<PD5); //pinMode(GSM_POWER, OUTPUT);  /PD5
+  DDRD &= ~(1<<PD6);//pinMode(GSM_CHARGE, INPUT);
 
   Serial.begin(57600);
-  digitalWrite(GSM_POWER,LOW);
+  delay(100);
+  _HWB_L_5();//PORTD &= ~(1<<PD5);//digitalWrite(GSM_POWER,LOW);
   delay(3000);
   //digitalWrite(GSM_POWER,HIGH);
   //delay(100);
@@ -112,7 +120,7 @@ void setup() {
 
   charge();
   
-  fona.enableRTC(1);
+  //fona.enableRTC(1);
   //while (!fonaSS);
   //fonaSS.println("AT&F1");
   //delay(500);
@@ -125,48 +133,59 @@ void setup() {
   //clearbuffer();
 //start 
   for (byte i=0; i<10;i++ ) {
-  digitalWrite(LED_BUILTIN, 1);   // turn the LED on (HIGH is the voltage level)
+  _HWB_H_13();//digitalWrite(LED_BUILTIN, 1);   // turn the LED on (HIGH is the voltage level)
   delay(100);               // wait for a second
-  digitalWrite(LED_BUILTIN, 0);    // turn the LED off by making the voltage LOW
+  _HWB_L_13();//digitalWrite(LED_BUILTIN, 0);    // turn the LED off by making the voltage LOW
   delay(80); 
   }
-#ifdef DEBUG
+//#ifdef DEBUG
   Serial.println(F("GPS Tracker starting ..."));
-#endif
+  delay(50);
+//#endif
 #ifndef DEBUG
   Serial.println(F("Debug is off"));
+  delay(50);
 #endif
 
-  delay(15000);  // wait a few seconds to stabilize connection
 
+  sleep(2);  // wait a few seconds to stabilize connection
+  delay(1000);
   while ( !fonaSS);
   // Initialise the FONA module
   while (! FONAconnect(F(GSM_APN), F(GSM_USERNAME), F(GSM_PASSWORD))) {
 #ifdef DEBUG   
     Serial.println(F("Retrying FONA GPRS ..."));
+    delay(50);
 #endif
-    delay(15000);
+
+    sleep(2);
+    delay(1000);
     while ( !fonaSS);
 }
 
-    delay(15000); 
+    sleep(2); 
+    delay(1000);
     while ( !fonaSS);
     byte trying =0;
     while (! GPS() ) {
 #ifdef DEBUG
     Serial.println(F("Retrying FONA GPS ..."));
+    delay(50);
 #endif
-    delay(15000);
+
+    sleep(2);
+    delay(1000);
     while ( !fonaSS);
     trying++;
     if (trying == 20)resetFunc();
    }
 #ifdef DEBUG
   Serial.println(F("Connected to Cellular!"));
+  delay(50);
 #endif
 
-  delay(5000);  // wait a few seconds to stabilize connection
- 
+  sleep(2);  // wait a few seconds to stabilize connection
+  delay(1000);
   
 }
 
@@ -177,13 +196,27 @@ void loop() {
     delay(50); 
     Serial.flush();
     delay(50);  
+
+   if (! fona.getBattVoltage(&vbat)) {
+   
+    vbat = 0;
+   //} else {
+   // blink();
+  } 
 //charge needed    
-if ( vbat < 3510) {
-    digitalWrite(LED_BUILTIN, 1);
+if ( vbat <= 3400) {
+    _HWB_H_13();//digitalWrite(LED_BUILTIN, 1);
+#ifdef DEBUG
     Serial.println(F("LOW VOLTAGE ! charge it !!!"));
+    delay(50);
+#endif 
+    _HWB_H_5();
+    sleep(500); //66 min
+    _HWB_L_5();
+    delay(3000);
   } else { 
 
-   digitalWrite(LED_BUILTIN, 0);
+   _HWB_L_13();//digitalWrite(LED_BUILTIN, 0);
    
   }
 //charge check
@@ -195,7 +228,12 @@ charge();
 
 do{
    //clearbuffer();
-   delay(DELAY*1000);  // wait a few seconds to stabilize connection
+   //delay(DELAY*1000);  // wait a few seconds to stabilize connection
+
+
+   sleep(DELAY);
+   
+   delay(1000);
    while (!fonaSS);
    fona.deleteSMS(1);
    delay(1000);
@@ -205,26 +243,28 @@ do{
 #endif
    //clearbuffer();
    prepareData();
-       
+   //delay(1000);    
   
 if (readytosend == 1) {
       
     //clearbuffer();
     MQTT_connect();
-    //delay(50);
+    //delay(100);
 
     
     // Now we can publish stuff!
     //clearbuffer();
-    int check =3;
+    byte check =3;
   do {
     while (!fonaSS);
     //clearbuffer();
     if (! feed.publish(geodata)) {
+        
 #ifdef DEBUG
        Serial.println(F("Sent Failed"));
        delay(50);
 #endif
+        delay(50);
           check--;
           //clearbuffer();
           MQTT_connect();
@@ -257,9 +297,11 @@ if (readytosend == 1) {
       
       while ( !fonaSS);
       mqtt.ping(3);
+      
       delay(100); 
           while (!fonaSS);
           if (!fona.TCPconnected()){
+             delay(50); 
               return;
            }   
 }
@@ -299,7 +341,9 @@ if (readytosend == 1) {
 #ifdef DEBUG
            Serial.println(F("Trying up FONA GPS ..."));
 #endif
-           delay(10000);
+
+           sleep(1);
+           delay(2000);
            while (!fonaSS);
            retry++;
             if (retry == 10) {
@@ -316,7 +360,7 @@ if (readytosend == 1) {
 /*
 void clearbuffer(){
    // Read all available serial input to flush pending data.
-    uint16_t timeoutloop = 0;
+    int timeoutloop = 0;
     
     while (!fonaSS);
     fonaSS.peek();
@@ -349,6 +393,7 @@ void MQTT_connect() {
       delay(50);
 #endif
       while (!fonaSS);
+      //delay(100);
       byte test=0;
       while ((ret = mqtt.connect()) != 0 ) { // connect will return 0 for connected
       /*
@@ -363,8 +408,10 @@ void MQTT_connect() {
       }
       */
       delay(50);
+#ifdef DEBUG
       Serial.println(mqtt.connectErrorString(ret));
-      
+//      delay(50);
+#endif
       mqtt.disconnect();
 #ifdef DEBUG     
       Serial.println(F("Retrying MQTT connection in 5 seconds ..."));
@@ -387,8 +434,7 @@ void MQTT_connect() {
 
 void prepareData() {
 
-static float lastmovement_W = 0;
-static float lastmovement_L = 0;
+
 
   
   int ctime[6];
@@ -396,6 +442,7 @@ static float lastmovement_L = 0;
   
   while (!fonaSS);
    if (! fona.getBattVoltage(&vbat)) {
+   
     vbat = 0;
    //} else {
    // blink();
@@ -414,6 +461,7 @@ static float lastmovement_L = 0;
   //setTime(&ctime[0], &ctime[1], &ctime[2], &ctime[3], &ctime[4], &ctime[5]);
   delay(20);
   time_t uxdate = now();
+  yield();
   delay(20);
    //if (! fona.getBattPercent(&vbat)) vbat = 0;
 
@@ -429,36 +477,42 @@ static float lastmovement_L = 0;
   movement = distanceCoordinates(converter[0],converter[1],lastmovement_W,lastmovement_L);
   //movement = distance_in_m(converter[0],converter[1],lastmovement_W,lastmovement_L);
   if ((int)movement > 1000 or (int)movement < 0  ) movement = MOVEMENT + 1.0; //1000 means more than 200 km/h, it is added before first initialosation of last loc.
-  StaticJsonBuffer<125> jsonBuffer;
+  
+  StaticJsonBuffer<126> jsonBuffer;
+  
   //memset(jsonBuffer, 0, sizeof(jsonBuffer));
   //delay(50);
   JsonObject& root = jsonBuffer.createObject();
+  //yield();
   delay(100);
   
     
     root.set("_type","location");
     root.set("acc",int(movement));
+    
     root.set("batt",vbat);
     root.set("cog",int(gps_data[4]));
-    delay(2);
+    
     root.set("lat",converter[0],7);
-    delay(2);
+    
     root.set("lon",converter[1],7);
-
+    
     //root.set("lat",gps_data[0],7);
     //delay(2);
     //root.set("lon",gps_data[1],7);
     
     root.set("tid",TID);
     root.set("vel",(int(gps_data[2]) <= SPEED_TR ? 0 : int(gps_data[2])));
-    delay(50);
+    
     root.set("tst",uxdate);
-    delay(2);
+    
     memset(geodata, 0, sizeof(geodata));
+    
     delay(50);
-    root.printTo(geodata, 125);
+    root.printTo(geodata, 126);
+    
     delay(50);
-
+    
         
   //if ((((gps_data[0]) - lastmovement_W ) > float(0.0010000)) or (((gps_data[1]) - lastmovement_L ) > float(0.0010000)) or reporter == HEARTBIT) {
   // if (((converter[0] - lastmovement_W ) > float(0.0010000)) or ((converter[1] - lastmovement_L ) > float(0.0010000)) or reporter == HEARTBIT) {
@@ -497,7 +551,7 @@ lastmovement_L = gps_data[1];
 delay(50);
 */
   
-  delete[] converter,movement,root;
+  delete[] converter,movement,&root;
   
   } else {
       
@@ -525,13 +579,13 @@ delay(50);
   Serial.println();
   Serial.print(F("   Seconds waiting: "));
   delay(50);
-  Serial.print((HEARTBIT * (DELAY +5)));
+  Serial.print((HEARTBIT * ((DELAY *8) +5)));
   Serial.print(F(" seconds before heartbit: "));
   delay(50);
-  Serial.println( ((HEARTBIT * (DELAY +5)) - (reporter *(DELAY +5))));
+  Serial.println( ((HEARTBIT * ((DELAY *8) +5)) - (reporter *((DELAY *8) +5))));
   Serial.println();
 #endif
-  delete[] converter,movement,root;
+  delete[] converter,movement,&root;
 
 }
 
@@ -561,34 +615,50 @@ float distanceCoordinates(float flat1, float flon1, float flat2, float flon2) {
   dist_calc=(2*atan2(sqrt(dist_calc),sqrt(1.0-dist_calc)));
   
   dist_calc*=6371000.0; //Converting to meters
-  
+  yield();
   return  dist_calc;
   
 }
 
 //BLINK
 
+void sleep(uint16_t count){
+
+        while  (count-- >0){        
+                
+          LowPower.idle(SLEEP_8S, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_OFF, SPI_OFF, USART0_OFF, TWI_OFF);
+          yield();
+          delay(100);
+        }
+          
+}
 
 void charge(){
   while ((digitalRead(GSM_CHARGE))) {
     
-    digitalWrite(LED_BUILTIN, HIGH);
+    _HWB_H_13();//digitalWrite(LED_BUILTIN, HIGH);
     delay(2000);
-    digitalWrite(LED_BUILTIN, LOW);
-    delay(2000);
+    //digitalWrite(LED_BUILTIN, LOW);
+    //delay(2000);
     #ifdef DEBUG
     Serial.println(F("Charging"));
-    
+    delay(50);
     #endif
     fona.enableGPRS(false);
     delay(500);
     fona.enableGPS(false);
     delay(500);
-        
+    _HWB_H_5();
+    sleep(1000); //133 min
+    _HWB_L_5();
+    delay(3000);
   } 
     fona.enableGPRS(true);
     delay(500);
     fona.enableGPS(true);
     delay(500);
-    digitalWrite(LED_BUILTIN, 0); 
+    _HWB_L_13();//digitalWrite(LED_BUILTIN, 0); 
 }
+
+
+
