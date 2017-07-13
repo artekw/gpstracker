@@ -1,0 +1,131 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_MOD_BY	Bostjan Mihoric	/ccompletion@gmail.com/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	/unofficial modification/
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.8	/unofficial modification/
+ADC_OFF	LowPower_32u4A7.h	63;"	enumerator	enum:adc_t
+ADC_ON	LowPower_32u4A7.h	64;"	enumerator	enum:adc_t
+AIO_PASSWORD	config.h	26;"	macro
+AIO_SERVER	config.h	23;"	macro
+AIO_SERVERPORT	config.h	24;"	macro
+AIO_USERNAME	config.h	25;"	macro
+BOD_OFF	LowPower_32u4A7.h	57;"	enumerator	enum:bod_t
+BOD_ON	LowPower_32u4A7.h	58;"	enumerator	enum:bod_t
+DELAY	config.h	31;"	macro
+FONAconnect	fonahelper.cpp	31;"	function
+GPS	fonahelper.cpp	98;"	function
+GPS_Data	fonahelper.cpp	151;"	function
+GSM_APN	config.h	14;"	macro
+GSM_PASSWORD	config.h	16;"	macro
+GSM_USERNAME	config.h	15;"	macro
+HEARTBIT	config.h	30;"	macro
+IDLE_0	LowPower_32u4A7.h	147;"	enumerator	enum:idle_t
+IDLE_1	LowPower_32u4A7.h	148;"	enumerator	enum:idle_t
+IDLE_2	LowPower_32u4A7.h	149;"	enumerator	enum:idle_t
+ISR	LowPower_32u4A7.h	1184;"	function
+LowPower	LowPower_32u4A7.h	1239;"	variable
+LowPowerClass	LowPower_32u4A7.h	152;"	class
+MOVEMENT	config.h	32;"	macro
+PRTIM4	LowPower_32u4A7.h	271;"	macro
+SLEEP_120MS	LowPower_32u4A7.h	45;"	enumerator	enum:period_t
+SLEEP_15MS	LowPower_32u4A7.h	42;"	enumerator	enum:period_t
+SLEEP_1S	LowPower_32u4A7.h	48;"	enumerator	enum:period_t
+SLEEP_250MS	LowPower_32u4A7.h	46;"	enumerator	enum:period_t
+SLEEP_2S	LowPower_32u4A7.h	49;"	enumerator	enum:period_t
+SLEEP_30MS	LowPower_32u4A7.h	43;"	enumerator	enum:period_t
+SLEEP_4S	LowPower_32u4A7.h	50;"	enumerator	enum:period_t
+SLEEP_500MS	LowPower_32u4A7.h	47;"	enumerator	enum:period_t
+SLEEP_60MS	LowPower_32u4A7.h	44;"	enumerator	enum:period_t
+SLEEP_8S	LowPower_32u4A7.h	51;"	enumerator	enum:period_t
+SLEEP_FOREVER	LowPower_32u4A7.h	52;"	enumerator	enum:period_t
+SPEED_TR	config.h	29;"	macro
+SPI_OFF	LowPower_32u4A7.h	105;"	enumerator	enum:spi_t
+SPI_ON	LowPower_32u4A7.h	106;"	enumerator	enum:spi_t
+TID	config.h	28;"	macro
+TIMER0_OFF	LowPower_32u4A7.h	99;"	enumerator	enum:timer0_t
+TIMER0_ON	LowPower_32u4A7.h	100;"	enumerator	enum:timer0_t
+TIMER1_OFF	LowPower_32u4A7.h	93;"	enumerator	enum:timer1_t
+TIMER1_ON	LowPower_32u4A7.h	94;"	enumerator	enum:timer1_t
+TIMER2_OFF	LowPower_32u4A7.h	87;"	enumerator	enum:timer2_t
+TIMER2_ON	LowPower_32u4A7.h	88;"	enumerator	enum:timer2_t
+TIMER3_OFF	LowPower_32u4A7.h	81;"	enumerator	enum:timer3_t
+TIMER3_ON	LowPower_32u4A7.h	82;"	enumerator	enum:timer3_t
+TIMER4_OFF	LowPower_32u4A7.h	75;"	enumerator	enum:timer4_t
+TIMER4_ON	LowPower_32u4A7.h	76;"	enumerator	enum:timer4_t
+TIMER5_OFF	LowPower_32u4A7.h	69;"	enumerator	enum:timer5_t
+TIMER5_ON	LowPower_32u4A7.h	70;"	enumerator	enum:timer5_t
+TOPIC	config.h	27;"	macro
+TWI_OFF	LowPower_32u4A7.h	135;"	enumerator	enum:twi_t
+TWI_ON	LowPower_32u4A7.h	136;"	enumerator	enum:twi_t
+USART0_OFF	LowPower_32u4A7.h	111;"	enumerator	enum:usart0_t
+USART0_ON	LowPower_32u4A7.h	112;"	enumerator	enum:usart0_t
+USART1_OFF	LowPower_32u4A7.h	117;"	enumerator	enum:usart1_t
+USART1_ON	LowPower_32u4A7.h	118;"	enumerator	enum:usart1_t
+USART2_OFF	LowPower_32u4A7.h	123;"	enumerator	enum:usart2_t
+USART2_ON	LowPower_32u4A7.h	124;"	enumerator	enum:usart2_t
+USART3_OFF	LowPower_32u4A7.h	129;"	enumerator	enum:usart3_t
+USART3_ON	LowPower_32u4A7.h	130;"	enumerator	enum:usart3_t
+USB_OFF	LowPower_32u4A7.h	141;"	enumerator	enum:usb_t
+USB_ON	LowPower_32u4A7.h	142;"	enumerator	enum:usb_t
+_SS_MAX_RX_BUFF	config.h	12;"	macro
+adcNoiseReduction	LowPower_32u4A7.h	180;"	prototype	class:LowPowerClass
+adcNoiseReduction	LowPower_32u4A7.h	837;"	function	class:LowPowerClass
+adc_t	LowPower_32u4A7.h	61;"	enum
+bod_t	LowPower_32u4A7.h	55;"	enum
+clockSource	LowPower_32u4A7.h	1129;"	local
+clockSource	LowPower_32u4A7.h	340;"	local
+clockSource	LowPower_32u4A7.h	589;"	local
+clockSource	LowPower_32u4A7.h	737;"	local
+clockSource	LowPower_32u4A7.h	841;"	local
+clockSource	LowPower_32u4A7.h	985;"	local
+cog	fonahelper.cpp	160;"	local
+enableGPRS	fonahelper.cpp	78;"	prototype	file:
+enableGPS	fonahelper.cpp	106;"	prototype	file:
+end	fonahelper.cpp	67;"	prototype	file:
+gps_enabled	fonahelper.cpp	28;"	variable
+gps_success	fonahelper.cpp	164;"	local
+idle	LowPower_32u4A7.h	1205;"	function	class:LowPowerClass
+idle	LowPower_32u4A7.h	158;"	prototype	class:LowPowerClass
+idle	LowPower_32u4A7.h	335;"	function	class:LowPowerClass
+idle	LowPower_32u4A7.h	459;"	function	class:LowPowerClass
+idle	LowPower_32u4A7.h	582;"	function	class:LowPowerClass
+idle	LowPower_32u4A7.h	730;"	function	class:LowPowerClass
+idle_t	LowPower_32u4A7.h	145;"	enum
+latitude	fonahelper.cpp	160;"	local
+longitude	fonahelper.cpp	160;"	local
+lowPowerBodOff	LowPower_32u4A7.h	254;"	macro	funlike:
+lowPowerBodOn	LowPower_32u4A7.h	241;"	macro	funlike:
+net	fonahelper.cpp	54;"	local
+period_t	LowPower_32u4A7.h	40;"	enum
+powerDown	LowPower_32u4A7.h	181;"	prototype	class:LowPowerClass
+powerDown	LowPower_32u4A7.h	913;"	function	class:LowPowerClass
+powerExtStandby	LowPower_32u4A7.h	1125;"	function	class:LowPowerClass
+powerExtStandby	LowPower_32u4A7.h	184;"	prototype	class:LowPowerClass
+powerSave	LowPower_32u4A7.h	182;"	prototype	class:LowPowerClass
+powerSave	LowPower_32u4A7.h	981;"	function	class:LowPowerClass
+powerStandby	LowPower_32u4A7.h	1064;"	function	class:LowPowerClass
+powerStandby	LowPower_32u4A7.h	183;"	prototype	class:LowPowerClass
+power_timer4_disable	LowPower_32u4A7.h	276;"	macro	funlike:
+power_timer4_enable	LowPower_32u4A7.h	280;"	macro	funlike:
+setGPRSNetworkSettings	fonahelper.cpp	75;"	prototype	file:
+sleep	fonahelper.cpp	7;"	prototype	file:
+sleep_bod_disable	LowPower_32u4A7.h	225;"	macro	funlike:
+speed_kph	fonahelper.cpp	160;"	local
+spi_t	LowPower_32u4A7.h	103;"	enum
+standby	LowPower_32u4A7.h	1225;"	function	class:LowPowerClass
+stat	fonahelper.cpp	122;"	local
+timer0_t	LowPower_32u4A7.h	97;"	enum
+timer1_t	LowPower_32u4A7.h	91;"	enum
+timer2_t	LowPower_32u4A7.h	85;"	enum
+timer3_t	LowPower_32u4A7.h	79;"	enum
+timer4_t	LowPower_32u4A7.h	73;"	enum
+timer5_t	LowPower_32u4A7.h	67;"	enum
+twi_t	LowPower_32u4A7.h	133;"	enum
+usart0_t	LowPower_32u4A7.h	109;"	enum
+usart1_t	LowPower_32u4A7.h	115;"	enum
+usart2_t	LowPower_32u4A7.h	121;"	enum
+usart3_t	LowPower_32u4A7.h	127;"	enum
+usb_t	LowPower_32u4A7.h	139;"	enum
+utime	fonahelper.cpp	153;"	local
